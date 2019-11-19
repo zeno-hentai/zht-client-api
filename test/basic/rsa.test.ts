@@ -1,6 +1,6 @@
 import {it} from 'mocha'
 import {expect} from 'chai'
-import {rsaEncrypt, rsaDecrypt, rsaGenKey} from '../lib/rsa'
+import {rsaEncrypt, rsaDecrypt, rsaGenKey} from '../../lib/utils/crypto/rsa'
 
 
 it('rsa', async () => {

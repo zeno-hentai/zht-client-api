@@ -1,6 +1,6 @@
 import {describe, it} from 'mocha'
 import {expect} from 'chai'
-import {aesEncrypt, aesDecrypt} from '../lib/aes'
+import {aesEncrypt, aesDecrypt} from '../../lib/utils/crypto/aes'
 
 it('aes', async () => {
     const plainText = "23333"

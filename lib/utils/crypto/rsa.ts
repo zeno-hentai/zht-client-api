@@ -1,4 +1,5 @@
 import Base64ArrayBuffer from 'base64-arraybuffer'
+import {Crypto as WebCrypto} from '@peculiar/webcrypto'
 
 export interface ZHTKeyPair {
     publicKey: string,
@@ -55,11 +56,7 @@ class BrowserRsaUtil implements ZHTRsaUtil {
 
 const rsaUtil: ZHTRsaUtil = globalThis.crypto && globalThis.crypto.subtle ? 
     new BrowserRsaUtil(globalThis.crypto.subtle) : 
-    new BrowserRsaUtil((() => {
-        const {Crypto} = require('@peculiar/webcrypto')
-        console.log(Crypto)
-        return new Crypto().subtle
-    })())
+    new BrowserRsaUtil(new WebCrypto().subtle)
 
 export async function rsaGenKey(): Promise<ZHTKeyPair>{
     return await rsaUtil.generateKeyPair()
