@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosPromise, AxiosResponse } from "axios";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 export interface ZHTSuccessResponse<T> {
     success: true
