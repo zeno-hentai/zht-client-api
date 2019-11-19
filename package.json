@@ -27,6 +27,7 @@
   "tsconfig-paths": "^3.9.0",
   "typescript": "^3.7.2"
  },
+ "prepublish": "yarn test && tsc",
  "scripts": {
   "build": "tsc",
   "test": "mocha -r ts-node/register tests/**/*.test.ts",
