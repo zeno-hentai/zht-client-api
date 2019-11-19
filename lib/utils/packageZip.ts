@@ -25,10 +25,10 @@ export class ZHTResourcePackBuilder<Meta = any> {
         const text = Base64ArrayBuffer.encode(content)
         return await aesEncrypt(text, await this.keyPromise)
     }
-    private async addMetaFile(privateKey: string) {
-        const encryptedMeta = await rsaEncrypt(JSON.stringify(this.meta), privateKey)
-        const encryptedKey = await rsaEncrypt(await this.keyPromise, privateKey)
-        const encryptedTags = await Promise.all(this.tags.map(async t => await rsaEncrypt(t, privateKey)))
+    private async addMetaFile(publicKey: string) {
+        const encryptedMeta = await rsaEncrypt(JSON.stringify(this.meta), publicKey)
+        const encryptedKey = await rsaEncrypt(await this.keyPromise, publicKey)
+        const encryptedTags = await Promise.all(this.tags.map(async t => await rsaEncrypt(t, publicKey)))
         const files = await Promise.all(this.fileNameList.map(async f => await aesEncrypt(f, await this.keyPromise)))
         const meta = {
             encryptedMeta, encryptedKey, encryptedTags, files
@@ -39,8 +39,8 @@ export class ZHTResourcePackBuilder<Meta = any> {
         await this.zip.file(`resource/${name}`, await this.encrypt(content))
         this.fileNameList.push(name)
     }
-    async build(privateKey: string): Promise<ArrayBuffer> {
-        await this.addMetaFile(privateKey)
+    async build(publicKey: string): Promise<ArrayBuffer> {
+        await this.addMetaFile(publicKey)
         return await this.zip.generateAsync({
             type: "arraybuffer"
         })

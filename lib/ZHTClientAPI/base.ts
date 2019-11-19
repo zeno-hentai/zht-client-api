@@ -1,4 +1,4 @@
-import { ZHTHttpClient, ZHTHttpClientOptions } from './client';
+import { ZHTHttpClient, ZHTHttpClientOptions } from '../utils/client';
 
 export type ZHTClientOptions = ZHTHttpClientOptions
 
