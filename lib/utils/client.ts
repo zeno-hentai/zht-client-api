@@ -62,6 +62,14 @@ export class ZHTHttpClient {
         return await this.handleApiResponse(response)
     }
 
+    async getBinaryData(url: string, onUploadProgress?: (progressEvent: any) => void): Promise<string> {
+        const response = await this.axios.get(url, {onUploadProgress})
+        if(response.status != 200){
+            this.error(`HTTP Status: ${response.status}`)
+        }
+        return response.data
+    }
+
     async post<R, Q = any>(url: string, request: Q): Promise<R> {
         const response = await this.axios.post<ZHTResponse<R>>(url, request)
         return await this.handleApiResponse(response)
