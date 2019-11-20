@@ -29,7 +29,7 @@
  },
  "prepublish": "yarn test && tsc",
  "scripts": {
-  "build": "tsc",
+  "build": "rm -rf dist/; tsc",
   "test": "mocha -r ts-node/register test/basic/**/*.test.ts",
   "test-api": "mocha -r ts-node/register test/api/**/*.test.ts",
   "coverage": "nyc -r lcov -e .ts -x \"*.test.ts\" npm run test"

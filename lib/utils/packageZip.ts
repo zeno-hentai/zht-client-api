@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import { aesGenKey, aesEncrypt } from './crypto/aes';
 import { rsaEncrypt } from './crypto/rsa';
 import Base64ArrayBuffer from 'base64-arraybuffer'
+import { EncryptedItemIndexData } from '../data/item';
 
 export interface ZHTResourcePackBuilderOptions<Meta> {
     meta: Meta,

@@ -1,5 +1,5 @@
 import {ZHTClientAPI} from './base';
-import { ZHTUserInfo, ZHTUserUnauthorized } from './data';
+import { ZHTUserInfo, ZHTUserUnauthorized } from '../data';
 import { sha256Hash } from '../utils/crypto/sha256';
 import { rsaGenKey } from '../utils/crypto/rsa';
 import { aesEncrypt } from '../utils/crypto/aes';
@@ -10,7 +10,7 @@ declare module './base' {
         login(request: ZHTLoginRequest): Promise<ZHTUserInfo>
         info(): Promise<ZHTUserInfo | ZHTUserUnauthorized>
         logout(): Promise<void>
-        delete(): Promise<void>
+        deleteUser(): Promise<void>
     }
 }
 
@@ -68,7 +68,7 @@ ZHTClientAPI.prototype.logout = async function(): Promise<void> {
     return await this.http.delete("/api/auth/logout")
 }
 
-ZHTClientAPI.prototype.delete = async function(): Promise<void> {
+ZHTClientAPI.prototype.deleteUser = async function(): Promise<void> {
     return await this.http.delete("/api/auth/delete")
 }
 
