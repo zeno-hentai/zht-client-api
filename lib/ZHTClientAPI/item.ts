@@ -1,7 +1,7 @@
 import {ZHTClientAPI} from './base';
 import { EncryptedItemIndexData, ItemIndexData, ZHTItemQueryPaging } from '../data/item';
-import { rsaDecrypt } from '../utils/crypto/rsa';
-import { ItemTagData } from '../data/tag';
+import { rsaDecrypt, rsaEncrypt } from '../utils/crypto/rsa';
+import { ItemTagData, AddItemTagResponse, AddItemTagRequest } from '../data/tag';
 
 declare module './base' {
     interface ZHTClientAPI {
@@ -9,6 +9,9 @@ declare module './base' {
         getItem<Meta extends {}>(id: number, privateKey: string, metaParser: MetaParser<Meta>): Promise<ItemIndexData>
         queryItemList<Meta extends {}>(offset: number, limit: number, privateKey: string, metaParser: MetaParser<Meta>): Promise<ItemIndexData<Meta>[]>
         deleteItem(id: number): Promise<void>
+
+        addTag(itemId: number, tag: string, publicKey: string): Promise<AddItemTagResponse>
+        deleteTag(tagId: number): Promise<void>
     }
 }
 
@@ -45,6 +48,15 @@ ZHTClientAPI.prototype.queryItemList = async function <Meta extends {}>(offset: 
 
 ZHTClientAPI.prototype.deleteItem = async function(id: number): Promise<void> {
     await this.http.delete<void>(`/api/item/delete/${id}`)
+}
+
+ZHTClientAPI.prototype.addTag = async function (itemId: number, tag: string, publicKey: string): Promise<AddItemTagResponse> {
+    const encryptedTag = await rsaEncrypt(tag, publicKey)
+    return await this.http.post<AddItemTagResponse, AddItemTagRequest>("/api/item/tag/add", {itemId, encryptedTag})
+}
+
+ZHTClientAPI.prototype.deleteTag = async function (tagId: number): Promise<void> {
+    await this.http.delete<void>(`/api/item/tag/delete/${tagId}`)
 }
 
 export default {} // work around

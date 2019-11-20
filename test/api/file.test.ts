@@ -10,6 +10,7 @@ describe('item testing', () => {
     let testPack: ZHTTestingPackage | null
     let itemId: number | null
     let privateKey: string | null
+    let publicKey: string | null
     const PASSWORD = "password"
     before(async () => {
         await client.register({username: `user_${new Date().getTime()}`, password: PASSWORD, masterKey: 'admin-secret'})
@@ -37,11 +38,12 @@ describe('item testing', () => {
         }
     })
 
-    it('get private key', async () => {
+    it('get key pair', async () => {
         const user = await client.infoDecrypted(PASSWORD)
         expect(user.authorized).is.true
         if(user.authorized) {
             privateKey = user.privateKey
+            publicKey = user.publicKey
         }
     })
 
@@ -63,6 +65,31 @@ describe('item testing', () => {
             const item = await client.getItem(itemId, privateKey, data => data as ZHTTestingMeta)
             expect(item.id).eq(itemId)
             expect(listItem.meta.title).eq(testPack.data.meta.title)
+        }
+    })
+
+    it('test tag', async () => {
+        expect(publicKey).not.null
+        expect(privateKey).not.null
+        expect(itemId).not.null
+        const testTag = 'test_tag'
+        if(publicKey && itemId && privateKey) {
+            const res = await client.addTag(itemId, testTag, publicKey)
+            expect(res.itemId).eq(itemId)
+            const item = await client.getItem(itemId, privateKey, data => data as ZHTTestingMeta)
+            expect(item.tags.some(t => t.id == res.id && t.tag == testTag)).true
+            await client.deleteTag(res.id)
+            const item2 = await client.getItem(itemId, privateKey, data => data as ZHTTestingMeta)
+            expect(item2.tags.some(t => t.tag == testTag)).false
+        }
+    })
+
+    it('delete item', async () => {
+        expect(itemId).is.not.null
+        if(itemId){
+            await client.deleteItem(itemId)
+            const total = await client.getItemsTotal()
+            expect(total).eq(0)
         }
     })
 })
