@@ -3,6 +3,7 @@ import { getClient, getWorkerClient } from './utils/client';
 import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
 import { generateTestingPackage, ZHTTestingPackage, convertTestingPackageToBuilder, ZHTTestingMeta } from './utils/file';
 import { ZHTResourcePackBuilder } from '../../lib/utils/packageZip';
+import { b64encode } from '../../lib/utils/crypto/base64';
 
 describe('item testing', () => {
     const client = getClient()
@@ -65,6 +66,20 @@ describe('item testing', () => {
             const item = await client.getItem(itemId, privateKey, data => data as ZHTTestingMeta)
             expect(item.id).eq(itemId)
             expect(listItem.meta.title).eq(testPack.data.meta.title)
+        }
+    })
+
+    it('test file', async () => {
+        expect(itemId).is.not.null
+        expect(testPack).not.null
+        expect(privateKey).not.null
+        if(itemId !== null && testPack && privateKey) {
+            const item = await client.getItem(itemId, privateKey, data => data as ZHTTestingMeta)
+            const fileMap = await client.getFileMap(itemId, item.key)
+            for(let [name, mappedName] of Object.entries(fileMap)) {
+                const data = await client.getFileData(itemId, mappedName, item.key)
+                expect(b64encode(data)).eq(b64encode(testPack.files[name]))
+            }
         }
     })
 
