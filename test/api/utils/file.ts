@@ -1,7 +1,4 @@
-import { ItemIndexData } from "../../../lib";
-import { ZHTResourcePackBuilderOptions } from '../../../lib/utils/packageZip';
-import { ZHTResourcePackBuilder } from '../../../lib/utils/packageZip';
-
+import { CreateItemRequest } from '../../../lib/data/item';
 export interface ZHTTestingMeta {
     title: string
     type: "testing_file"
@@ -9,7 +6,7 @@ export interface ZHTTestingMeta {
 }
 
 export interface ZHTTestingPackage {
-    data: ZHTResourcePackBuilderOptions<ZHTTestingMeta>
+    data: CreateItemRequest<ZHTTestingMeta>
     files: {[key: string]: ArrayBuffer}
 }
 
@@ -25,7 +22,7 @@ export function generateTestingPackage(title: string): ZHTTestingPackage {
     for(let i=0; i<tagNumber; i++){
         tags.push(`tag_${i}`)
     }
-    const data: ZHTResourcePackBuilderOptions<ZHTTestingMeta> = {
+    const data: CreateItemRequest<ZHTTestingMeta> = {
         meta,
         tags
     }
@@ -35,13 +32,4 @@ export function generateTestingPackage(title: string): ZHTTestingPackage {
         files[`file_${i}`] = enc.encode(`file_content_${i}`.repeat(1024))
     }
     return {data, files}
-}
-
-export async function convertTestingPackageToBuilder(testPack: ZHTTestingPackage): Promise<ZHTResourcePackBuilder<ZHTTestingMeta>> {
-    const builder = new ZHTResourcePackBuilder<ZHTTestingMeta>(testPack.data)
-    for(let [name, data] of Object.entries(testPack.files)){
-        await builder.addFile(name, data)
-        console.log(`      adding file: ${name}`)
-    }
-    return builder
 }

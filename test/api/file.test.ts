@@ -1,8 +1,7 @@
 import {expect} from 'chai'
 import { getClient, getWorkerClient } from './utils/client';
 import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
-import { generateTestingPackage, ZHTTestingPackage, convertTestingPackageToBuilder, ZHTTestingMeta } from './utils/file';
-import { ZHTResourcePackBuilder } from '../../lib/utils/packageZip';
+import { generateTestingPackage, ZHTTestingPackage, ZHTTestingMeta } from './utils/file';
 import { b64encode } from '../../lib/utils/crypto/base64';
 
 describe('item testing', () => {
