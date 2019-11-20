@@ -32,7 +32,7 @@ export function generateTestingPackage(title: string): ZHTTestingPackage {
     const files: {[key: string]: ArrayBuffer} = {}
     const enc = new TextEncoder()
     for(let i=0; i<fileNumber; i++){
-        files[`file_${i}`] = enc.encode(`file_content_${i}`.repeat(5000))
+        files[`file_${i}`] = enc.encode(`file_content_${i}`.repeat(1024))
     }
     return {data, files}
 }
@@ -41,6 +41,7 @@ export async function convertTestingPackageToBuilder(testPack: ZHTTestingPackage
     const builder = new ZHTResourcePackBuilder<ZHTTestingMeta>(testPack.data)
     for(let [name, data] of Object.entries(testPack.files)){
         await builder.addFile(name, data)
+        console.log(`      adding file: ${name}`)
     }
     return builder
 }

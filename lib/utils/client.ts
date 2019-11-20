@@ -76,7 +76,12 @@ export class ZHTHttpClient {
     }
 
     async postBinaryData<R>(url: string, data: ArrayBuffer, onUploadProgress?: (progressEvent: any) => void): Promise<R> {
-        const response = await this.axios.post<ZHTResponse<R>>(url, data, {onUploadProgress})
+        const response = await this.axios.post<ZHTResponse<R>>(url, data, {onUploadProgress, maxContentLength: 1024*1024*1024})
+        return await this.handleApiResponse(response)
+    }
+
+    async putBinaryData<R>(url: string, data: ArrayBuffer, onUploadProgress?: (progressEvent: any) => void): Promise<R> {
+        const response = await this.axios.put<ZHTResponse<R>>(url, data, {onUploadProgress, maxContentLength: 1024*1024*1024})
         return await this.handleApiResponse(response)
     }
 

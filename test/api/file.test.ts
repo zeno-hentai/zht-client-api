@@ -29,22 +29,30 @@ describe('item testing', () => {
         }
     })
 
-    it('upload package', async () => {
-        expect(workerClient).not.null
-        expect(testPack).not.null
-        if(workerClient && testPack) {
-            const builder: ZHTResourcePackBuilder<ZHTTestingMeta> = await convertTestingPackageToBuilder(testPack)
-            const uploadedItem = await workerClient.uploadPackagePullingPublicKey(builder)
-            itemId = uploadedItem.id
-        }
-    })
-
     it('get key pair', async () => {
         const user = await client.infoDecrypted(PASSWORD)
         expect(user.authorized).is.true
         if(user.authorized) {
             privateKey = user.privateKey
             publicKey = user.publicKey
+        }
+    })
+
+    it('upload package', async () => {
+        expect(workerClient).not.null
+        expect(testPack).not.null
+        expect(publicKey).not.null
+        if(workerClient && testPack && publicKey) {
+            const uploadedItem = await workerClient.createItem<ZHTTestingMeta>({
+                meta: testPack.data.meta,
+                tags: testPack.data.tags
+            }, publicKey)
+            itemId = uploadedItem.id
+            const key = uploadedItem.key
+            for(let [name, data] of Object.entries(testPack.files)){
+                console.log(`      upload: ${name}`)
+                await workerClient.uploadItemFile(itemId, name, key, data)
+            }
         }
     })
 
@@ -76,10 +84,10 @@ describe('item testing', () => {
         if(itemId !== null && testPack && privateKey) {
             const item = await client.getItem(itemId, privateKey, data => data as ZHTTestingMeta)
             const fileMap = await client.getFileMap(itemId, item.key)
-            for(let [name, mappedName] of Object.entries(fileMap)) {
-                const data = await client.getFileData(itemId, mappedName, item.key)
-                expect(b64encode(data)).eq(b64encode(testPack.files[name]))
-            }
+            const [name, mappedName] = Object.entries(fileMap)[0]
+            const data = await client.getFileData(itemId, mappedName, item.key)
+            console.log(`      downloading ${name} => ${mappedName}`)
+            expect(b64encode(data)).eq(b64encode(testPack.files[name]))
         }
     })
 
