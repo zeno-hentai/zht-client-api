@@ -32,7 +32,7 @@ export function generateTestingPackage(title: string): ZHTTestingPackage {
     const files: {[key: string]: ArrayBuffer} = {}
     const enc = new TextEncoder()
     for(let i=0; i<fileNumber; i++){
-        files[`file_${i}`] = enc.encode(`file_content_${i}`)
+        files[`file_${i}`] = enc.encode(`file_content_${i}`.repeat(5000))
     }
     return {data, files}
 }
