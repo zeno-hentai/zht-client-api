@@ -1,5 +1,5 @@
-import Base64ArrayBuffer from 'base64-arraybuffer'
 import {Crypto as WebCrypto} from '@peculiar/webcrypto'
+import { b64encode, b64decode } from './base64';
 
 export interface ZHTKeyPair {
     publicKey: string,
@@ -44,12 +44,12 @@ class BrowserRsaUtil implements ZHTRsaUtil {
         const enc = new TextEncoder()
         const key = await this.subtle.importKey(this.KEY_FORMAT, JSON.parse(publicKey), this.ENCRYPTION_ALGORITHM, true, ['encrypt'])
         const binData = await this.subtle.encrypt(this.ENCRYPTION_ALGORITHM, key, enc.encode(plainText))
-        return Base64ArrayBuffer.encode(binData)
+        return b64encode(binData)
     }
     async decrypt(plainText: string, privateKey: string): Promise<string> {
         const dec = new TextDecoder()
         const key = await this.subtle.importKey(this.KEY_FORMAT, JSON.parse(privateKey), this.ENCRYPTION_ALGORITHM, true, ['decrypt'])
-        const binData = await this.subtle.decrypt(this.ENCRYPTION_ALGORITHM, key, Base64ArrayBuffer.decode(plainText))
+        const binData = await this.subtle.decrypt(this.ENCRYPTION_ALGORITHM, key, b64decode(plainText))
         return dec.decode(binData)
     }
 }

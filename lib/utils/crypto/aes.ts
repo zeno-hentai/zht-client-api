@@ -1,8 +1,10 @@
 import CryptoJS from 'crypto-js'
-import Base64ArrayBuffer from 'base64-arraybuffer'
+import {Crypto as WebCrypto} from '@peculiar/webcrypto'
+import { b64encode } from './base64';
 
 export async function aesGenKey(): Promise<string> {
-    const key = await window.crypto.subtle.generateKey(
+    const crypto = new WebCrypto()
+    const key = await crypto.subtle.generateKey(
         {
           name: "AES-GCM",
           length: 256
@@ -10,13 +12,13 @@ export async function aesGenKey(): Promise<string> {
         true,
         ["encrypt", "decrypt"]
       )
-      return Base64ArrayBuffer.encode(await crypto.subtle.exportKey('raw', key))
+      return b64encode(await crypto.subtle.exportKey('raw', key))
 }
 
 export async function aesEncrypt(plainText: string, key: string): Promise<string> {
-    return CryptoJS.AES.encrypt(plainText, key).toString()
+    return CryptoJS.AES.encrypt(plainText, key).toString().replace(/\//g, '_')
 }
 
 export async function aesDecrypt(plainText: string, key: string): Promise<string> {
-    return CryptoJS.AES.decrypt(plainText, key).toString(CryptoJS.enc.Utf8)
+    return CryptoJS.AES.decrypt(plainText.replace(/_/g, '/'), key).toString(CryptoJS.enc.Utf8)
 }

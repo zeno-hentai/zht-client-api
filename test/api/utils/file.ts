@@ -1,5 +1,5 @@
 import { ItemIndexData } from "../../../lib";
-import { ZHTResourcePackBuilderOptions } from '../../../dist/lib/utils/packageZip';
+import { ZHTResourcePackBuilderOptions } from '../../../lib/utils/packageZip';
 import { ZHTResourcePackBuilder } from '../../../lib/utils/packageZip';
 
 export interface ZHTTestingMeta {
@@ -37,8 +37,8 @@ export function generateTestingPackage(title: string): ZHTTestingPackage {
     return {data, files}
 }
 
-export async function convertTestingPackageToBuilder(testPack: ZHTTestingPackage): Promise<ZHTResourcePackBuilder> {
-    const builder: ZHTResourcePackBuilder = new ZHTResourcePackBuilder(testPack.data)
+export async function convertTestingPackageToBuilder(testPack: ZHTTestingPackage): Promise<ZHTResourcePackBuilder<ZHTTestingMeta>> {
+    const builder = new ZHTResourcePackBuilder<ZHTTestingMeta>(testPack.data)
     for(let [name, data] of Object.entries(testPack.files)){
         await builder.addFile(name, data)
     }
