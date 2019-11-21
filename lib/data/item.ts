@@ -18,6 +18,11 @@ export interface CreateItemRequest<Meta> {
     tags: string[]
 }
 
+export interface UpdateMetaRequest {
+    encryptedMeta: string
+    itemId: number 
+}
+
 export interface EncryptedCreateItemRequest {
     encryptedMeta: string
     encryptedKey: string

@@ -3,6 +3,7 @@ import { getClient, getWorkerClient } from './utils/client';
 import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
 import { generateTestingPackage, ZHTTestingPackage, ZHTTestingMeta } from './utils/file';
 import { b64encode } from '../../lib/utils/crypto/base64';
+import { decryptItemData } from '../../lib';
 
 describe('item testing', () => {
     const client = getClient()
@@ -10,6 +11,7 @@ describe('item testing', () => {
     let testPack: ZHTTestingPackage | null
     let itemId: number | null
     let privateKey: string | null
+    let itemKey: string | null
     let publicKey: string | null
     const PASSWORD = "password"
     before(async () => {
@@ -47,10 +49,10 @@ describe('item testing', () => {
                 tags: testPack.data.tags
             }, publicKey)
             itemId = uploadedItem.id
-            const key = uploadedItem.key
+            itemKey = uploadedItem.key
             for(let [name, data] of Object.entries(testPack.files)){
                 console.log(`      upload: ${name}`)
-                await workerClient.uploadItemFile(itemId, name, key, data)
+                await workerClient.uploadItemFile(itemId, name, itemKey, data)
             }
         }
     })
@@ -73,6 +75,52 @@ describe('item testing', () => {
             const item = await client.getItem(itemId, privateKey, data => data as ZHTTestingMeta)
             expect(item.id).eq(itemId)
             expect(listItem.meta.title).eq(testPack.data.meta.title)
+        }
+    })
+
+    it('update item', async () => {
+        expect(itemId).is.not.null
+        expect(publicKey).not.null
+        expect(privateKey).not.null
+        expect(testPack).not.null
+        if(itemId && testPack && publicKey && privateKey) {
+            const newTitle = 'new_test_title'
+            const newMeta: ZHTTestingMeta = {
+                ...testPack.data.meta,
+                title: newTitle
+            }
+            await client.updateItemMeta<ZHTTestingMeta>(itemId, newMeta, publicKey)
+            const newItem = await client.getItem<ZHTTestingMeta>(itemId, privateKey, p => p as ZHTTestingMeta)
+            expect(newItem.meta.title).eq(newTitle)
+        }
+    })
+
+    let testMappedName: string | null
+    const TEST_FILE_NAME = 'test_file_name.txt'
+    const TEST_FILE_CONTENT = new TextEncoder().encode('test_content_'.repeat(1000))
+
+    it('upload file', async () => {
+        expect(itemId).is.not.null
+        expect(itemKey).is.not.null
+        if(itemId  && itemKey) {
+            await client.uploadFile(itemId, TEST_FILE_NAME, itemKey, TEST_FILE_CONTENT)
+            const fileMap = await client.getFileMap(itemId, itemKey)
+            testMappedName = fileMap[TEST_FILE_NAME]
+            expect(!!testMappedName).is.true
+            const decryptedContent = await client.getFileData(itemId, testMappedName, itemKey)
+            expect(b64encode(decryptedContent)).eq(b64encode(TEST_FILE_CONTENT))
+        }
+    })
+
+    it('delete file', async () => {
+        expect(itemId).is.not.null
+        expect(itemKey).is.not.null
+        expect(testMappedName).is.not.null
+        if(itemId && itemKey && testMappedName) {
+            await client.deleteFile(itemId, testMappedName)
+            const fileMap = await client.getFileMap(itemId, itemKey)
+            const mappedName = fileMap[TEST_FILE_NAME]
+            expect(!!mappedName).is.false
         }
     })
 
