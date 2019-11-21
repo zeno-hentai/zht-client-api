@@ -4,6 +4,7 @@ import { rsaDecrypt, rsaEncrypt } from '../utils/crypto/rsa';
 import { ItemTagData, AddItemTagResponse, AddItemTagRequest } from '../data/tag';
 import { CreateItemResult, CreateItemRequest, EncryptedCreateItemRequest, CreateItemResponse } from '../../lib/data/item';
 import { aesGenKey } from '../utils/crypto/aes';
+import { Moment } from 'moment';
 
 declare module './base' {
     interface ZHTClientAPI {
@@ -15,6 +16,11 @@ declare module './base' {
         createItem<Meta extends {}>(request: CreateItemRequest<Meta>, publicKey: string): Promise<CreateItemResult>
         updateItemMeta<Meta extends {}>(itemId: number, meta: Meta, publicKey: string): Promise<void>
         deleteItem(id: number): Promise<void>
+
+
+        deletedItemIdsAfter(after: Moment): Promise<number[]>
+        updatedItemIdsAfter(after: Moment): Promise<number[]>
+        updatedItemsAfter<Meta extends {}>(after: Moment, privateKey: string, metaParser: (x: any) => Meta): AsyncGenerator<ItemIndexData<Meta>>
 
         addTag(itemId: number, tag: string, publicKey: string): Promise<AddItemTagResponse>
         deleteTag(tagId: number): Promise<void>
@@ -70,6 +76,21 @@ ZHTClientAPI.prototype.updateItemMeta = async function <Meta extends {}>(itemId:
 
 ZHTClientAPI.prototype.deleteItem = async function(id: number): Promise<void> {
     await this.http.delete<void>(`/api/item/delete/${id}`)
+}
+
+ZHTClientAPI.prototype.deletedItemIdsAfter = async function (after: Moment): Promise<number[]> {
+    return await this.http.get<number[]>(`/api/item/deleted/after/${after.unix() * 1000 + after.milliseconds()}`)
+}
+
+ZHTClientAPI.prototype.updatedItemIdsAfter = async function (after: Moment): Promise<number[]> {
+    return await this.http.get<number[]>(`/api/item/updated/after/${after.unix() * 1000 + after.milliseconds()}`)
+}
+
+ZHTClientAPI.prototype.updatedItemsAfter = async function* <Meta extends {}>(after: Moment, privateKey: string, metaParser: (x: any) => Meta): AsyncGenerator<ItemIndexData<Meta>> {
+    const itemList = await this.updatedItemIdsAfter(after)
+    for(let id of itemList){
+        yield await this.getItem<Meta>(id, privateKey, metaParser)
+    }
 }
 
 ZHTClientAPI.prototype.addTag = async function (itemId: number, tag: string, publicKey: string): Promise<AddItemTagResponse> {

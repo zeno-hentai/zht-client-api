@@ -4,6 +4,7 @@ import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
 import { generateTestingPackage, ZHTTestingPackage, ZHTTestingMeta } from './utils/file';
 import { b64encode } from '../../lib/utils/crypto/base64';
 import { decryptItemData } from '../../lib';
+import moment from 'moment'
 
 describe('item testing', () => {
     const client = getClient()
@@ -14,6 +15,7 @@ describe('item testing', () => {
     let itemKey: string | null
     let publicKey: string | null
     const PASSWORD = "password"
+    const afterMoment = moment()
     before(async () => {
         await client.register({username: `user_${new Date().getTime()}`, password: PASSWORD, masterKey: 'admin-secret'})
         const tokenResult = await client.createToken("test api")
@@ -53,6 +55,17 @@ describe('item testing', () => {
             for(let [name, data] of Object.entries(testPack.files)){
                 console.log(`      upload: ${name}`)
                 await workerClient.uploadItemFile(itemId, name, itemKey, data)
+            }
+        }
+    })
+
+    it('check updated', async () => {
+        expect(itemId).is.not.null
+        expect(testPack).not.null
+        expect(privateKey).not.null
+        if(itemId && testPack && privateKey) {
+            for await(let item of client.updatedItemsAfter<ZHTTestingMeta>(afterMoment, privateKey, s => s as ZHTTestingMeta)) {
+                expect(item.id).eq(itemId)
             }
         }
     })
@@ -160,6 +173,14 @@ describe('item testing', () => {
             await client.deleteItem(itemId)
             const total = await client.getItemsTotal()
             expect(total).eq(0)
+        }
+    })
+
+    it('delete record', async () => {
+        expect(itemId).is.not.null
+        if(itemId) {
+            const idList = await client.deletedItemIdsAfter(afterMoment)
+            expect(idList.includes(itemId)).true
         }
     })
 })
