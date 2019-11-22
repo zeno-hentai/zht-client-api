@@ -11,7 +11,9 @@ export interface ZHTWorkerClientAPIOptions {
 
 export class ZHTWorkerClientAPI {
     http: ZHTHttpClient
+    apiToken: string
     constructor(options: ZHTWorkerClientAPIOptions){
+        this.apiToken=  options.apiToken
         this.http = new ZHTHttpClient({
             baseURL: options.baseURL,
             axiosOptions: {

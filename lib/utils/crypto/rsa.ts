@@ -19,10 +19,12 @@ class BrowserRsaUtil implements ZHTRsaUtil {
 
     ENCRYPTION_ALGORITHM: RsaHashedKeyGenParams = {
         name: "RSA-OAEP",
-        modulusLength: 2048,
+        modulusLength: 4096,
         publicExponent: new Uint8Array([1, 0, 1]),
         hash: "SHA-256"
     }
+
+    private chunkSize = 256
 
     constructor(subtle: SubtleCrypto) {
         this.subtle = subtle
@@ -39,18 +41,37 @@ class BrowserRsaUtil implements ZHTRsaUtil {
             publicKey: JSON.stringify(publicKeyBuffer),
             privateKey: JSON.stringify(privateKeyBuffer)
         }
-    }    
+    }
+
     async encrypt(plainText: string, publicKey: string): Promise<string> {
         const enc = new TextEncoder()
         const key = await this.subtle.importKey(this.KEY_FORMAT, JSON.parse(publicKey), this.ENCRYPTION_ALGORITHM, true, ['encrypt'])
-        const binData = await this.subtle.encrypt(this.ENCRYPTION_ALGORITHM, key, enc.encode(plainText))
-        return b64encode(binData)
+        const chunks: string[] = []
+        const originalBinary = enc.encode(plainText)
+        for(let begin = 0; begin < originalBinary.byteLength; begin += this.chunkSize){
+            const chunk = originalBinary.slice(begin, begin + this.chunkSize)
+            const binData = await this.subtle.encrypt(this.ENCRYPTION_ALGORITHM, key, chunk)
+            chunks.push(b64encode(binData))
+        }
+        return chunks.join("|")
     }
     async decrypt(plainText: string, privateKey: string): Promise<string> {
         const dec = new TextDecoder()
         const key = await this.subtle.importKey(this.KEY_FORMAT, JSON.parse(privateKey), this.ENCRYPTION_ALGORITHM, true, ['decrypt'])
-        const binData = await this.subtle.decrypt(this.ENCRYPTION_ALGORITHM, key, b64decode(plainText))
-        return dec.decode(binData)
+        const targets: ArrayBuffer[] = []
+        let len = 0
+        for(let chunk of plainText.split("|")) {
+            const binData = await this.subtle.decrypt(this.ENCRYPTION_ALGORITHM, key, b64decode(chunk))
+            len += binData.byteLength
+            targets.push(binData)
+        }
+        const result = new Uint8Array(len)
+        let offset = 0
+        for(let c of targets){
+            result.set(new Uint8Array(c), offset)
+            offset += c.byteLength
+        }
+        return dec.decode(result)
     }
 }
 

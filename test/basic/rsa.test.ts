@@ -4,7 +4,7 @@ import {rsaEncrypt, rsaDecrypt, rsaGenKey} from '../../lib/utils/crypto/rsa'
 
 
 it('rsa', async () => {
-    const plainText = "23333"
+    const plainText = "23333".repeat(1000)
     const {privateKey, publicKey} = await rsaGenKey()
     const encrypted = await rsaEncrypt(plainText, publicKey)
     console.log(encrypted)
