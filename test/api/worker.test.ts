@@ -2,6 +2,7 @@ import { getClient, getWorkerClient } from './utils/client';
 import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
 import { expect } from 'chai';
 import { WorkerInfo } from '../../lib/data/worker';
+import { createWebSocketClient } from '../../lib/utils/net/ws';
 describe('worker tests', () => {
     const client = getClient()
     let workerClient: ZHTWorkerClientAPI | null
@@ -12,6 +13,13 @@ describe('worker tests', () => {
     let clientPrivateKey: string | null
     const TEST_TOKEN_TITLE = "test worker client"
     const TEST_TASK_URL = "test url"
+    let triggeredCounter = 0
+
+    const ws = createWebSocketClient("ws://localhost:8080/api/ws/worker")
+    ws.onMessage((s) => {
+        triggeredCounter++
+    })
+
     before(async () => {
         await client.register({username: `test_${new Date().getTime()}`, password: 'test', masterKey: 'admin-secret'})
         const user = await client.infoDecrypted('test')
@@ -27,6 +35,7 @@ describe('worker tests', () => {
     
     after(async () => {
         await client.deleteUser()
+        ws.close()
     })
 
     it('register worker client', async () => {
@@ -38,6 +47,13 @@ describe('worker tests', () => {
             expect(workers.length).eq(1)
             workerInfo = workers[0]
             expect(workerInfo.title).eq(TEST_TOKEN_TITLE)
+        }
+    })
+
+    it('connect notifier', async () => {
+        expect(apiToken).not.null
+        if(apiToken){
+            ws.send(apiToken)
         }
     })
 
@@ -110,5 +126,9 @@ describe('worker tests', () => {
             const workers = await client.queryWorkers(userPrivateKey)
             expect(workers.length).eq(0)
         }
+    })
+
+    it('check notifier counter', async () => {
+        expect(triggeredCounter).eq(2)
     })
 })

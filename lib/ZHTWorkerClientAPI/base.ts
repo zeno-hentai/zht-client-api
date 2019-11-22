@@ -1,5 +1,5 @@
 import Axios, { AxiosInstance, AxiosProxyConfig } from 'axios';
-import { ZHTHttpClient } from '../utils/client';
+import { ZHTHttpClient } from '../utils/net/http';
 
 const API_TOKEN_HEADER_NAME = 'ZHT-API-TOKEN'
 
