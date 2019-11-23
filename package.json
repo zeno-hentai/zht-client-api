@@ -1,6 +1,6 @@
 {
  "name": "zht-client-api",
- "version": "0.0.6",
+ "version": "0.0.7",
  "description": "Zeno Hentai Client API",
  "main": "lib/index.ts",
  "repository": "https://github.com/zeno-hentai/zht-client-api",
