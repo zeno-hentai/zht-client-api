@@ -30,10 +30,6 @@
   "typescript": "^3.7.2",
   "ws": "^7.2.0"
  },
- "files": [
-  "./dist/**/*.js",
-  "./dist/**/*.d.ts"
- ],
  "prepublish": "yarn test && tsc",
  "scripts": {
   "build": "rm -rf dist/; tsc",
