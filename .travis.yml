@@ -8,6 +8,7 @@ cache:
   - "./node_modules"
 deploy:
   provider: npm
+  version: '12.13'
   email: "$NPM_EMAIL"
   api_key: "$NPM_TOKEN"
   skip_cleanup: true
