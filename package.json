@@ -1,8 +1,8 @@
 {
  "name": "zht-client-api",
- "version": "0.0.9",
+ "version": "0.0.10",
  "description": "Zeno Hentai Client API",
- "main": "lib/index.ts",
+ "main": "dist/lib/index.js",
  "repository": "https://github.com/zeno-hentai/zht-client-api",
  "author": "Jaccob Kii",
  "license": "MIT",
@@ -30,6 +30,9 @@
   "typescript": "^3.7.2",
   "ws": "^7.2.0"
  },
+ "files": [
+  "dist"
+ ],
  "prepublish": "yarn test && tsc",
  "scripts": {
   "build": "rm -rf dist/; tsc",
