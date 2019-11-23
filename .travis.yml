@@ -9,7 +9,7 @@ cache:
   - "./node_modules"
 deploy:
   provider: npm
-  email: jaccobkii@gmail.com
+  email: jaccobkii
   api_key: 
     secure: "XL78Met8bcntCUolQBzaoHYpRqClS6M33a809vIlYilQav0nSFnpBBKSeQ/dRBfegymHPpSbY+73YrCK/G9OeqxaAlJnnL6W0e4eOn3Q3exOg+XQlizcJQ5pqfM0Ux6wkKfVxcNABXpEwUIyNMYskbZC5QnGkmUdazKrA8CTYQ2w/Wwg17Bi5VkXhKLkGsEI3egol0OIK/WZJ/oPWxcDbkufJWu2axIiycaRfz3g8qj8tGQmOaX5x8GYJrs1eBkxJ8pnH7GSxg7y24sh/XVJPQYGfuxCgtm2N/5bhJZn2PisNtaZJLaDCnwWKYhhXOsL+4JLoq4RWsmNYALG+kiuwqn3zFafA0RkipeeSppOSkBMoN2Yqg7QCicirx6D4hs4CX0yBzYBMrQAVA8AOTtVNY5v6fQeKZUsFsWIGVQHt88lHI+6LvSLRL1It9km/ZBPKYfn0nDRal+a5/ZcPVQEK/0e6F5nKf9fQoV1PbZfhKJt8XBHokG8lCl75r9bKiN61qHVuCG/QqbbqowLfov0yexrjwbif+VmcGFQi8y1gwMruomTYzHjv7PX2cIuTLAz4OGLl/xdibAheJx7AkO7azX8NFBIriaFZfwjgiMPGXLdTLweCoh+D5wDYUMIbRAd1sExzmBNXeRzdgWV0OgQWIDNhHWYUyuQNV4BIQyK1o0="
   skip_cleanup: true
