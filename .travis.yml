@@ -7,8 +7,7 @@ cache:
   directories:
   - "./node_modules"
 deploy:
-  provider: npm
-  version: '12.13'
+  provider: yarn
   email: "$NPM_EMAIL"
   api_key: "$NPM_TOKEN"
   skip_cleanup: true
