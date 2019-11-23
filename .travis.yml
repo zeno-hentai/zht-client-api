@@ -4,12 +4,13 @@ node_js:
 before_script: yarn install
 script: yarn build
 cache:
+  yarn: true
   directories:
   - "./node_modules"
 deploy:
-  provider: yarn
-  email: "$NPM_EMAIL"
-  api_key: "$NPM_TOKEN"
+  provider: npm
+  email: $NPM_EMAIL
+  api_key: $NPM_TOKEN
   skip_cleanup: true
   # on:
   #   tags: true
