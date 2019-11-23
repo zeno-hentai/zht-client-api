@@ -14,6 +14,8 @@ deploy:
   skip_cleanup: true
   file_glob: true
   file: dist/**/*
+  on:
+    repo: zeno-hentai/zht-client-api
 env:
   global:
     secure: XuzjzWVAXbKpcBoZw1sC9wnMKPOPLPOV2A5fhYXq4jPuPqC6wx3xF7Vy9bLdCEsyUNjgef9OfwQ5ltjVFBjLiXutMm8OP8u0oTyqfm9sFq5ZOvomM/atfgjmbgrY/mJQb1geQk6Qvlcqg9pyqzhtF0/iwgVBaFvlENNA4ejhD9xF2gC9jdfDiUqXdr2Qal7IMWUUMnhl4lD05TGntfYdXWhdzC3Kcws5wwt9TZC8duSRSKdJT1aLYwp8+VBQkpEB3NSs4CJ+n9COBdMDY/f2LWbsvChbSmKCzuVXW5WZ22Lc5At5Ie+Y5VAanGE+2WJHmqdaClrGEA+P70jzew4zzchRV8EFRwOL2SvSM2iuI1omWwDYsRGuv6Vh+uuOqIhhqtyUYPCmVHbalaHLXHn9AeV7+nDao0lEAff/kYpnZPEev0xdqOCr6blL1t2IkY2jgEnHYI66CwT1lgQiC99JHYnz4uNogw0OXazVPGJvDVoISpX2abi563SuyKmw4PAYbCMOXIki1OwPko7MBNnI8g/qG+BN47HQ+PKqy5RuiKLpB+pD0G8+sIQQp5cc9NLVpqnRtEu7cC0jcNxc/svQrl/Pa2xl5Y0efTunMCDZJ/jdDFqnXZb2FRLTHmPEMi/sKET5mZfqseeukrENnqqGjk4HaUTegwgAZvibloyodwg=
