@@ -9,7 +9,7 @@ cache:
   - "./node_modules"
 deploy:
   provider: npm
-  email: jaccobkii
+  email: jaccobkii@gmail.com
   api_key: $NPM_PUBLISH_TOKEN
   skip_cleanup: true
   file_glob: true
