@@ -13,12 +13,14 @@ export interface WorkerInfo {
     id: number
     title: string
     publicKey: string
+    online: boolean
 }
 
 export interface EncryptedWorkerInfo {
     id: number
     title: string
     encryptedPublicKey: string
+    online: boolean
 }
 
 export interface WorkerAddTaskRequest {

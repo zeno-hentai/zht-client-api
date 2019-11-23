@@ -47,12 +47,13 @@ describe('worker tests', () => {
             expect(workers.length).eq(1)
             workerInfo = workers[0]
             expect(workerInfo.title).eq(TEST_TOKEN_TITLE)
+            expect(workerInfo.online).false
         }
     })
 
     it('connect notifier', async () => {
         expect(apiToken).not.null
-        if(apiToken){
+        if(apiToken && userPrivateKey){
             ws.send(apiToken)
         }
     })
