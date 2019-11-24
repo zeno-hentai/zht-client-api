@@ -40,14 +40,17 @@ interface EncryptedZHTLoginRequest {
     password: string
 }
 
+const PASSWORD_SALT = "SHItiahodfioaodifnao"
+
 ZHTClientAPI.prototype.register = async function(request: ZHTRegisterRequest): Promise<ZHTUserInfo>{
     const {username, password, masterKey} = request
     const encryptedPassword = await sha256Hash(password)
+    const authorizePassword = await sha256Hash(encryptedPassword + PASSWORD_SALT)
     const {publicKey, privateKey} = await rsaGenKey()
     const encryptedPrivateKey = await aesEncrypt(privateKey, encryptedPassword)
     return await this.http.post<ZHTUserInfo, EncryptedZHTRegisterRequest>("/api/auth/register", {
         username,
-        password: encryptedPassword,
+        password: authorizePassword,
         publicKey,
         encryptedPrivateKey,
         masterKey
@@ -55,7 +58,7 @@ ZHTClientAPI.prototype.register = async function(request: ZHTRegisterRequest): P
 }
 
 ZHTClientAPI.prototype.login = async function({username, password}: ZHTLoginRequest): Promise<ZHTUserInfo>{
-    const encryptedPassword = await sha256Hash(password)
+    const encryptedPassword = await sha256Hash(await sha256Hash(password) + PASSWORD_SALT)
     return await this.http.post<ZHTUserInfo, EncryptedZHTLoginRequest>("/api/auth/login", {
         username,
         password: encryptedPassword
