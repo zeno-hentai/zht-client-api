@@ -1,4 +1,4 @@
-export type ZHTLanguage = "zh-CN" | "en-US" | "jp"
+export type ZHTLanguage = "unknown" | "zh-CN" | "en-US" | "jp"
 
 export interface ZHTBaseMeta<Type extends string> {
     type: Type
