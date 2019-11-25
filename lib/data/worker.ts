@@ -7,6 +7,16 @@ export interface WorkerRegisterRequest {
 
 export interface WorkerRegisterResult {
     privateKey: string
+    getNotificationListener: (userPublicKey: string, onNotification: () => void) => Promise<ZHTWorkerNotificationListener>
+}
+
+export interface ZHTWorkerNotificationListenerConnectionRequest {
+    token: string
+    encryptedPublicKey: string
+}
+
+export interface ZHTWorkerNotificationListener {
+    close(): void
 }
 
 export interface WorkerInfo {

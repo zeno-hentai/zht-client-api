@@ -12,7 +12,9 @@ export interface ZHTWorkerClientAPIOptions {
 export class ZHTWorkerClientAPI {
     http: ZHTHttpClient
     apiToken: string
+    readonly baseURL: string
     constructor(options: ZHTWorkerClientAPIOptions){
+        this.baseURL = options.baseURL
         this.apiToken=  options.apiToken
         this.http = new ZHTHttpClient({
             baseURL: options.baseURL,

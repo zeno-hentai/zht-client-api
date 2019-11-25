@@ -10,6 +10,7 @@ export function createWebSocketClient(url: string): ZHTWebSocketClient {
 
 export interface ZHTWebSocketClient {
     onMessage(handler: (s: any) => void): void
+    onConnection(handler: () => void): void
     send(s: string): void
     close(): void
 }
@@ -20,14 +21,12 @@ class BrowserWSClient implements ZHTWebSocketClient {
     constructor(url: string){
         this.ws = new WebSocket(url)
         this.handlers = []
-        this.ws.onmessage = (evt) => {
-            for(let h of this.handlers){
-                h(evt.data)
-            }
-        }
+    }
+    onConnection(handler: () => void) {
+        this.ws.onopen = handler
     }
     onMessage(handler: (s: any) => void): void {
-        this.handlers.push(handler)
+        this.ws.onmessage = handler
     }
     send(s: string){
         this.ws.send(s)
@@ -40,18 +39,19 @@ class BrowserWSClient implements ZHTWebSocketClient {
 
 class NodeWSClient implements ZHTWebSocketClient {
     ws: NodeWS
-    handlers: ((s: any) => void)[]
+    private handler: (data: any) => void
     constructor(url: string){
         this.ws = new NodeWS(url)
-        this.handlers = []
+        this.handler = () => {}
         this.ws.on('message', (ws: NodeWS , data: NodeWS.Data) => {
-            for(let h of this.handlers){
-                h(data)
-            }
+            this.handler(data)
         })
     }
+    onConnection(handler: () => void) {
+        this.ws.on('open', handler)
+    }
     onMessage(handler: (s: any) => void): void {
-        this.handlers.push(handler)
+        this.handler = handler
     }
     send(s: string){
         this.ws.send(s)

@@ -1,9 +1,8 @@
 import { getClient, getWorkerClient } from './utils/client';
 import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
 import { expect } from 'chai';
-import { WorkerInfo } from '../../lib/data/worker';
-import { createWebSocketClient } from '../../lib/utils/net/ws';
-describe('worker tests', () => {
+import { WorkerInfo, ZHTWorkerNotificationListener } from '../../lib/data/worker';
+describe('worker tests', async () => {
     const client = getClient()
     let workerClient: ZHTWorkerClientAPI | null
     let apiToken: string | null
@@ -14,11 +13,7 @@ describe('worker tests', () => {
     const TEST_TOKEN_TITLE = "test worker client"
     const TEST_TASK_URL = "test url"
     let triggeredCounter = 0
-
-    const ws = createWebSocketClient("ws://localhost:8080/api/ws/worker")
-    ws.onMessage((s) => {
-        triggeredCounter++
-    })
+    let listener: ZHTWorkerNotificationListener | null
 
     before(async () => {
         await client.register({username: `test_${new Date().getTime()}`, password: 'test', masterKey: 'admin-secret'})
@@ -35,7 +30,9 @@ describe('worker tests', () => {
     
     after(async () => {
         await client.deleteUser()
-        ws.close()
+        if(listener){
+            listener.close()
+        }
     })
 
     it('register worker client', async () => {
@@ -44,17 +41,13 @@ describe('worker tests', () => {
             const res = await workerClient.registerWorker(userPublicKey)
             clientPrivateKey = res.privateKey
             const workers = await client.queryWorkers(userPrivateKey)
+            listener = await res.getNotificationListener(userPublicKey, () => {
+                triggeredCounter ++
+            })
             expect(workers.length).eq(1)
             workerInfo = workers[0]
             expect(workerInfo.title).eq(TEST_TOKEN_TITLE)
             expect(workerInfo.online).false
-        }
-    })
-
-    it('connect notifier', async () => {
-        expect(apiToken).not.null
-        if(apiToken && userPrivateKey){
-            ws.send(apiToken)
         }
     })
 
@@ -96,9 +89,9 @@ describe('worker tests', () => {
     })
 
     it('retry task', async () => {
-        expect(workerClient && clientPrivateKey && taskId && userPrivateKey).not.null
-        if(workerClient && clientPrivateKey && taskId && userPrivateKey) {
-            await client.retryWorkerTask(taskId)
+        expect(workerClient && clientPrivateKey && taskId && userPrivateKey && userPublicKey).not.null
+        if(workerClient && clientPrivateKey && taskId && userPrivateKey && userPublicKey) {
+            taskId = await client.retryWorkerTask(taskId, userPrivateKey, userPublicKey)
             const tasks = await client.queryWorkerTasks(userPrivateKey)
             expect(tasks[0].status).eq("SUSPENDED")
             const resp = await workerClient.pollTask(clientPrivateKey)
