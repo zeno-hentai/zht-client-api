@@ -1,11 +1,12 @@
 import {ZHTWorkerClientAPI} from './base';
-import { WorkerRegisterResult, PolledWorkerTask, EncryptedWorkerTaskInfo, WorkerTaskInfo, WorkerRegisterRequest, WorkerTaskStatusUpdateRequest, ZHTWorkerNotificationListener, ZHTWorkerNotificationListenerConnectionRequest } from '../data/worker';
-import { rsaGenKey, rsaDecrypt, rsaEncrypt } from '../utils/crypto/rsa';
+import { PolledWorkerTask, EncryptedWorkerTaskInfo, WorkerTaskInfo, WorkerRegisterRequest, WorkerTaskStatusUpdateRequest, ZHTWorkerNotificationListener, ZHTWorkerNotificationListenerConnectionRequest, ConnectWorkerOptions } from '../data/worker';
+import { rsaDecrypt, rsaEncrypt } from '../utils/crypto/rsa';
 import { createWebSocketClient } from '../utils/net/ws';
 
 declare module './base' {
     interface ZHTWorkerClientAPI {
-        registerWorker(userPublicKey: string): Promise<WorkerRegisterResult>
+        registerWorker(): void
+        connectWorker(options: ConnectWorkerOptions): Promise<ZHTWorkerNotificationListener>
         pollTask(workerPrivateKey: string): Promise<PolledWorkerTask<WorkerTaskInfo>>
         taskSuccess(taskId: number): Promise<void>
         taskFailed(taskId: number): Promise<void>
@@ -32,19 +33,14 @@ async function getNotificationListener(url: string, apiToken: string, workerPubl
     })
 }
 
-ZHTWorkerClientAPI.prototype.registerWorker = async function (userPublicKey: string): Promise<WorkerRegisterResult> {
-    const {privateKey, publicKey} = await rsaGenKey()
-    const encryptedPublicKey = await rsaEncrypt(publicKey, userPublicKey)
+ZHTWorkerClientAPI.prototype.registerWorker = async function (): Promise<void> {
     await this.http.post<void, WorkerRegisterRequest>("/api/api/worker/register", {
-        token: this.apiToken,
-        encryptedPublicKey
+        token: this.apiToken
     })
-    return {
-        privateKey, 
-        getNotificationListener: async (userPublicKey: string, onNotification: () => void) => {
-            return await getNotificationListener(`${this.baseURL}/api/ws/worker`, this.apiToken, publicKey, userPublicKey, onNotification)
-        }
-    }
+}
+
+ZHTWorkerClientAPI.prototype.connectWorker = async function ({userPublicKey, workerPublicKey, onNotification}: ConnectWorkerOptions): Promise<ZHTWorkerNotificationListener> {
+    return await getNotificationListener(`${this.baseURL}/api/ws/worker`, this.apiToken, workerPublicKey, userPublicKey, onNotification)
 }
 
 ZHTWorkerClientAPI.prototype.pollTask = async function(workerPrivateKey: string): Promise<PolledWorkerTask<WorkerTaskInfo>> {

@@ -2,12 +2,6 @@ export type WorkerStatusType = "SUSPENDED" | "RUNNING" | "SUCCESS" | "FAILED"
 
 export interface WorkerRegisterRequest {
     token: string
-    encryptedPublicKey: string
-}
-
-export interface WorkerRegisterResult {
-    privateKey: string
-    getNotificationListener: (userPublicKey: string, onNotification: () => void) => Promise<ZHTWorkerNotificationListener>
 }
 
 export interface ZHTWorkerNotificationListenerConnectionRequest {
@@ -19,18 +13,34 @@ export interface ZHTWorkerNotificationListener {
     close(): void
 }
 
-export interface WorkerInfo {
+export type WorkerInfo = {
     id: number
     title: string
-    publicKey: string
-    online: boolean
-}
+}  & (
+    {
+        publicKey: string
+        online: true
+    } | {
+        online: false
+    }
+)
 
-export interface EncryptedWorkerInfo {
+export type EncryptedWorkerInfo = {
     id: number
     title: string
-    encryptedPublicKey: string
-    online: boolean
+} & (
+    {
+        encryptedPublicKey: string
+        online: true
+    } | {
+        online: false
+    }
+)
+
+export interface ConnectWorkerOptions {
+    userPublicKey: string
+    workerPublicKey: string
+    onNotification: () => void
 }
 
 export interface WorkerAddTaskRequest {

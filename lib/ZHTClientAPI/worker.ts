@@ -6,7 +6,7 @@ declare module './base' {
     interface ZHTClientAPI {
         queryWorkers(userPrivateKey: string): Promise<WorkerInfo[]>
         getWorker(workerId: number, userPrivateKey: string): Promise<WorkerInfo>
-        addWorkerTask(url: string, userPublicKey: string, worker: Pick<WorkerInfo, 'id' | 'publicKey'>): Promise<number>
+        addWorkerTask(url: string, userPublicKey: string, workerId: number, workerPublicKey: string): Promise<number>
         queryWorkerTasks(userPrivateKey: string): Promise<WorkerTaskInfo[]>
         getTask(taskId: number, userPrivateKey: string): Promise<WorkerTaskInfo>
         deleteTask(taskId: number): Promise<void>
@@ -15,11 +15,11 @@ declare module './base' {
     }
 }
 
-ZHTClientAPI.prototype.addWorkerTask = async function (url: string, userPublicKey: string, {id, publicKey}: Pick<WorkerInfo, 'id' | 'publicKey'>): Promise<number> {
-    const encryptedURLToWorker = await rsaEncrypt(url, publicKey)
+ZHTClientAPI.prototype.addWorkerTask = async function (url: string, userPublicKey: string, workerId: number, workerPublicKey: string): Promise<number> {
+    const encryptedURLToWorker = await rsaEncrypt(url, workerPublicKey)
     const encryptedURLToUser = await rsaEncrypt(url, userPublicKey)
     return await this.http.post<number, WorkerAddTaskRequest>("/api/api/worker/task/add", {
-        workerId: id,
+        workerId,
         encryptedURLToWorker,
         encryptedURLToUser
     })
@@ -27,18 +27,20 @@ ZHTClientAPI.prototype.addWorkerTask = async function (url: string, userPublicKe
 
 ZHTClientAPI.prototype.queryWorkers = async function (userPrivateKey: string): Promise<WorkerInfo[]> {
     const list = await this.http.get<EncryptedWorkerInfo[]>(`/api/api/worker/query`)
-    return await Promise.all(list.map(async ({encryptedPublicKey, ...rest}) => ({
-        publicKey: await rsaDecrypt(encryptedPublicKey, userPrivateKey),
-        ...rest
-    })))
+    return await Promise.all(list.map(async (res) => (res.online ? 
+        {
+        ...res,
+        publicKey: await rsaDecrypt(res.encryptedPublicKey, userPrivateKey)
+    } : res )))
 }
 
 ZHTClientAPI.prototype.getWorker = async function (workerId: number, userPrivateKey: string): Promise<WorkerInfo> {
-    const {encryptedPublicKey, ...rest} = await this.http.get<EncryptedWorkerInfo>(`/api/api/worker/get/${workerId}`)
-    return {
-        publicKey: await rsaDecrypt(encryptedPublicKey, userPrivateKey),
-        ...rest
-    }
+    const res = await this.http.get<EncryptedWorkerInfo>(`/api/api/worker/get/${workerId}`)
+    return res.online ? {
+        ...res,
+        online: true,
+        publicKey: await rsaDecrypt(res.encryptedPublicKey, userPrivateKey),
+    } : res
 }
 
 ZHTClientAPI.prototype.queryWorkerTasks = async function (userPrivateKey: string): Promise<WorkerTaskInfo[]> {
@@ -62,12 +64,13 @@ ZHTClientAPI.prototype.deleteTask = async function (taskId: number): Promise<voi
 
 ZHTClientAPI.prototype.retryWorkerTask = async function (taskId: number, userPrivateKey: string, userPublicKey: string): Promise<number> {
     const {url, workerId} = await this.getTask(taskId, userPrivateKey)
-    const {publicKey: workerPublicKey} = await this.getWorker(workerId, userPrivateKey)
-    await this.deleteTask(taskId)
-    return await this.addWorkerTask(url, userPublicKey, {
-        id: workerId,
-        publicKey: workerPublicKey
-    })
+    const worker = await this.getWorker(workerId, userPrivateKey)
+    if(worker.online){
+        await this.deleteTask(taskId)
+        return await this.addWorkerTask(url, userPublicKey, workerId, worker.publicKey)
+    }else{
+        throw new Error("Worker not online")
+    }
 }
 
 ZHTClientAPI.prototype.deleteWorker = async function (workerId: number): Promise<void> {

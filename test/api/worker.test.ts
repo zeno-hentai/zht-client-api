@@ -2,6 +2,7 @@ import { getClient, getWorkerClient } from './utils/client';
 import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
 import { expect } from 'chai';
 import { WorkerInfo, ZHTWorkerNotificationListener } from '../../lib/data/worker';
+import { rsaGenKey } from '../../lib';
 describe('worker tests', async () => {
     const client = getClient()
     let workerClient: ZHTWorkerClientAPI | null
@@ -9,7 +10,7 @@ describe('worker tests', async () => {
     let userPrivateKey: string | null
     let userPublicKey: string | null
     let workerInfo: WorkerInfo | null
-    let clientPrivateKey: string | null
+    const {privateKey: workerPrivateKey, publicKey: workerPublicKey} = await rsaGenKey()
     const TEST_TOKEN_TITLE = "test worker client"
     const TEST_TASK_URL = "test url"
     let triggeredCounter = 0
@@ -38,37 +39,44 @@ describe('worker tests', async () => {
     it('register worker client', async () => {
         expect(workerClient && userPublicKey && userPrivateKey).not.null
         if(workerClient && userPublicKey && userPrivateKey) {
-            const res = await workerClient.registerWorker(userPublicKey)
-            clientPrivateKey = res.privateKey
+            await workerClient.registerWorker()
             const workers = await client.queryWorkers(userPrivateKey)
-            listener = await res.getNotificationListener(userPublicKey, () => {
-                triggeredCounter ++
-            })
             expect(workers.length).eq(1)
-            workerInfo = workers[0]
-            expect(workerInfo.title).eq(TEST_TOKEN_TITLE)
-            expect(workerInfo.online).false
+            expect(workers[0].title).eq(TEST_TOKEN_TITLE)
+            expect(workers[0].online).false
+            listener = await workerClient.connectWorker({
+                userPublicKey, 
+                workerPublicKey, 
+                onNotification: () => {
+                    triggeredCounter ++
+                }})
+            const workers2 = await client.queryWorkers(userPrivateKey)
+            workerInfo = workers2[0]
+            expect(workerInfo.online).true
         }
     })
 
     let taskId: number | null
 
     it('add task', async () => {
-        expect(workerClient && userPrivateKey && userPublicKey && clientPrivateKey && workerInfo).not.null
-        if(workerClient && userPublicKey && userPrivateKey && clientPrivateKey && workerInfo) {
-            await client.addWorkerTask(TEST_TASK_URL, userPublicKey, workerInfo)
-            const tasks = await client.queryWorkerTasks(userPrivateKey)
-            expect(tasks.length).eq(1)
-            expect(tasks[0].workerId).eq(workerInfo.id)
-            expect(tasks[0].status).eq("SUSPENDED")
-            taskId = tasks[0].id
+        expect(workerClient && userPrivateKey && userPublicKey && workerInfo).not.null
+        if(workerClient && userPublicKey && userPrivateKey && workerInfo) {
+            expect(workerInfo.online).true
+            if(workerInfo.online){
+                await client.addWorkerTask(TEST_TASK_URL, userPublicKey, workerInfo.id, workerInfo.publicKey)
+                const tasks = await client.queryWorkerTasks(userPrivateKey)
+                expect(tasks.length).eq(1)
+                expect(tasks[0].workerId).eq(workerInfo.id)
+                expect(tasks[0].status).eq("SUSPENDED")
+                taskId = tasks[0].id
+            }
         }
     })
 
     it('poll task', async () => {
-        expect(workerClient && clientPrivateKey && taskId && workerInfo && userPrivateKey).not.null
-        if(workerClient && clientPrivateKey && taskId && workerInfo && userPrivateKey) {
-            const resp = await workerClient.pollTask(clientPrivateKey)
+        expect(workerClient  && taskId && workerInfo && userPrivateKey).not.null
+        if(workerClient && taskId && workerInfo && userPrivateKey) {
+            const resp = await workerClient.pollTask(workerPrivateKey)
             expect(resp.hasTask).true
             if(resp.hasTask){
                 expect(resp.data.workerId).eq(workerInfo.id)
@@ -80,8 +88,8 @@ describe('worker tests', async () => {
     })
 
     it('failed task', async () => {
-        expect(workerClient && clientPrivateKey && taskId && userPrivateKey).not.null
-        if(workerClient && clientPrivateKey && taskId && userPrivateKey) {
+        expect(workerClient && taskId && userPrivateKey).not.null
+        if(workerClient && taskId && userPrivateKey) {
             await workerClient.taskFailed(taskId)
             const tasks = await client.queryWorkerTasks(userPrivateKey)
             expect(tasks[0].status).eq("FAILED")
@@ -89,12 +97,12 @@ describe('worker tests', async () => {
     })
 
     it('retry task', async () => {
-        expect(workerClient && clientPrivateKey && taskId && userPrivateKey && userPublicKey).not.null
-        if(workerClient && clientPrivateKey && taskId && userPrivateKey && userPublicKey) {
+        expect(workerClient && taskId && userPrivateKey && userPublicKey).not.null
+        if(workerClient && taskId && userPrivateKey && userPublicKey) {
             taskId = await client.retryWorkerTask(taskId, userPrivateKey, userPublicKey)
             const tasks = await client.queryWorkerTasks(userPrivateKey)
             expect(tasks[0].status).eq("SUSPENDED")
-            const resp = await workerClient.pollTask(clientPrivateKey)
+            const resp = await workerClient.pollTask(workerPrivateKey)
             expect(resp.hasTask).true
             if(resp.hasTask){
                 expect(resp.data.id).eq(taskId)
@@ -105,8 +113,8 @@ describe('worker tests', async () => {
     })
 
     it('success task', async () => {
-        expect(workerClient && clientPrivateKey && taskId && userPrivateKey).not.null
-        if(workerClient && clientPrivateKey && taskId && userPrivateKey) {
+        expect(workerClient && taskId && userPrivateKey).not.null
+        if(workerClient && taskId && userPrivateKey) {
             await workerClient.taskSuccess(taskId)
             const tasks = await client.queryWorkerTasks(userPrivateKey)
             expect(tasks[0].status).eq("SUCCESS")
