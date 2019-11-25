@@ -1,5 +1,4 @@
-import ZHTClientAPI from "../../../lib/ZHTClientAPI"
-import ZHTWorkerClientAPI from '../../../lib/ZHTWorkerClientAPI/index';
+import { ZHTClientAPI, ZHTWorkerClientAPI } from '../../../lib';
 
 function getBaseUrl(baseURL?: string): string {
     if(!baseURL && globalThis.process && globalThis.process.env['ZHT_SERVER_BASEURL']) {

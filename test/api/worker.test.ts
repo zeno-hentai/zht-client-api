@@ -37,7 +37,7 @@ describe('worker tests', async () => {
     })
 
     it('register worker client', async () => {
-        expect(workerClient && userPublicKey && userPrivateKey).not.null
+        expect(workerClient && workerInfo && userPublicKey && userPrivateKey).not.null
         if(workerClient && userPublicKey && userPrivateKey) {
             await workerClient.registerWorker()
             const workers = await client.queryWorkers(userPrivateKey)
@@ -52,7 +52,10 @@ describe('worker tests', async () => {
                 }})
             const workers2 = await client.queryWorkers(userPrivateKey)
             workerInfo = workers2[0]
-            expect(workerInfo.online).true
+            expect(workerInfo).not.null
+            if(workerInfo){
+                expect(workerInfo.online).true
+            }
         }
     })
 
