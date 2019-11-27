@@ -8,8 +8,8 @@ import uuid from 'uuid';
 
 declare module './base' {
     interface ZHTClientAPI {
-        register(request: ZHTRegisterRequest): Promise<ZHTUserInfo>
-        login(request: ZHTLoginRequest): Promise<ZHTUserInfo>
+        register(request: ZHTRegisterRequest): Promise<ZHTDecryptedUserInfo>
+        login(request: ZHTLoginRequest): Promise<ZHTDecryptedUserInfo>
         info(): Promise<ZHTUserInfo | ZHTUserUnauthorized>
         infoDecrypted(password: string): Promise<ZHTDecryptedUserInfo | ZHTUserUnauthorized>
         logout(): Promise<void>
@@ -44,14 +44,14 @@ interface EncryptedZHTLoginRequest {
 
 const PASSWORD_SALT = "SHItiahodfioaodifnao"
 
-ZHTClientAPI.prototype.register = async function(request: ZHTRegisterRequest): Promise<ZHTUserInfo>{
+ZHTClientAPI.prototype.register = async function(request: ZHTRegisterRequest): Promise<ZHTDecryptedUserInfo>{
     const {username, password, masterKey} = request
-    const encryptedPassword = await sha256Hash(password)
     const salt = uuid.v4()
+    const encryptedPassword = await sha256Hash(password + salt)
     const authorizePassword = await sha256Hash(encryptedPassword + salt)
     const {publicKey, privateKey} = await rsaGenKey()
     const encryptedPrivateKey = await aesEncrypt(privateKey, encryptedPassword)
-    return await this.http.post<ZHTUserInfo, EncryptedZHTRegisterRequest>("/api/auth/register", {
+    const result = await this.http.post<ZHTUserInfo, EncryptedZHTRegisterRequest>("/api/auth/register", {
         username,
         password: authorizePassword,
         salt,
@@ -59,15 +59,27 @@ ZHTClientAPI.prototype.register = async function(request: ZHTRegisterRequest): P
         encryptedPrivateKey,
         masterKey
     })
+    if(result.encryptedPrivateKey != encryptedPrivateKey){
+        throw new Error("Invalid privateKey")
+    }
+    return {
+        ...result,
+        privateKey
+    }
 }
 
-ZHTClientAPI.prototype.login = async function({username, password}: ZHTLoginRequest): Promise<ZHTUserInfo>{
+ZHTClientAPI.prototype.login = async function({username, password}: ZHTLoginRequest): Promise<ZHTDecryptedUserInfo>{
     const salt = await this.http.get<string>(`/api/auth/salt/${username}`)
-    const encryptedPassword = await sha256Hash(await sha256Hash(password) + salt)
-    return await this.http.post<ZHTUserInfo, EncryptedZHTLoginRequest>("/api/auth/login", {
+    const encryptedPassword = await sha256Hash(password + salt)
+    const authorizePassword = await sha256Hash(encryptedPassword + salt)
+    const {encryptedPrivateKey, ...rest} = await this.http.post<ZHTUserInfo, EncryptedZHTLoginRequest>("/api/auth/login", {
         username,
-        password: encryptedPassword
+        password: authorizePassword
     })
+    return {
+        privateKey: await aesDecrypt(encryptedPrivateKey, encryptedPassword),
+        ...rest
+    }
 }
 
 ZHTClientAPI.prototype.info = async function(): Promise<ZHTUserInfo | ZHTUserUnauthorized> {
@@ -75,10 +87,11 @@ ZHTClientAPI.prototype.info = async function(): Promise<ZHTUserInfo | ZHTUserUna
 }
 
 ZHTClientAPI.prototype.infoDecrypted = async function (password: string): Promise<ZHTDecryptedUserInfo | ZHTUserUnauthorized> {
-    const encryptedPassword = await sha256Hash(password)
     const info = await this.info()
     if(info.authorized){
+        const salt = await this.http.get<string>(`/api/auth/salt/${info.username}`)
         const {encryptedPrivateKey, ...rest} = info
+        const encryptedPassword = await sha256Hash(password + salt)
         const privateKey = await aesDecrypt(encryptedPrivateKey, encryptedPassword)
         return {privateKey, ...rest}
     }else{
