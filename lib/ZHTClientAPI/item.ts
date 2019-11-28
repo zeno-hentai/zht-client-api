@@ -3,7 +3,7 @@ import { EncryptedItemIndexData, ItemIndexData, ZHTItemQueryPaging, UpdateMetaRe
 import { rsaDecrypt, rsaEncrypt } from '../utils/crypto/rsa';
 import { ItemTagData, AddItemTagResponse, AddItemTagRequest } from '../data/tag';
 import { CreateItemResult, CreateItemRequest, EncryptedCreateItemRequest, CreateItemResponse } from '../../lib/data/item';
-import { aesGenKey } from '../utils/crypto/aes';
+import { aesGenKey, aesDecrypt, aesEncrypt } from '../utils/crypto/aes';
 import { Moment } from 'moment';
 
 declare module './base' {
@@ -39,11 +39,11 @@ export async function decryptItemData<Meta extends {}>(
     privateKey: string, 
     metaParser: MetaParser<Meta>): Promise<ItemIndexData<Meta>> {
         const key = await rsaDecrypt(encryptedItem.encryptedKey, privateKey)
-        const metaText = await rsaDecrypt(encryptedItem.encryptedMeta, privateKey)
+        const metaText = await aesDecrypt(encryptedItem.encryptedMeta, key)
         const meta = await Promise.resolve(metaParser(JSON.parse(metaText)))
         const tags: ItemTagData[] = await Promise.all(encryptedItem.encryptedTags.map(async t => ({
             id: t.id,
-            tag: await rsaDecrypt(t.encryptedTag, privateKey)
+            tag: await aesDecrypt(t.encryptedTag, key)
         })))
         return {key, meta, tags, id: encryptedItem.id}
 }
@@ -69,8 +69,8 @@ ZHTClientAPI.prototype.createItem = async function <Meta extends {}>(request: Cr
     return {id, key}
 }
 
-ZHTClientAPI.prototype.updateItemMeta = async function <Meta extends {}>(itemId: number, meta: Meta, publicKey: string): Promise<void>{
-    const encryptedMeta = await rsaEncrypt(JSON.stringify(meta), publicKey)
+ZHTClientAPI.prototype.updateItemMeta = async function <Meta extends {}>(itemId: number, meta: Meta, itemKey: string): Promise<void>{
+    const encryptedMeta = await aesEncrypt(JSON.stringify(meta), itemKey)
     await this.http.put<void, UpdateMetaRequest>("/api/item/update/meta", {encryptedMeta, itemId})
 }
 
@@ -93,8 +93,8 @@ ZHTClientAPI.prototype.updatedItemsAfter = async function* <Meta extends {}>(aft
     }
 }
 
-ZHTClientAPI.prototype.addTag = async function (itemId: number, tag: string, publicKey: string): Promise<AddItemTagResponse> {
-    const encryptedTag = await rsaEncrypt(tag, publicKey)
+ZHTClientAPI.prototype.addTag = async function (itemId: number, tag: string, itemKey: string): Promise<AddItemTagResponse> {
+    const encryptedTag = await aesEncrypt(tag, itemKey)
     return await this.http.post<AddItemTagResponse, AddItemTagRequest>("/api/item/tag/add", {itemId, encryptedTag})
 }
 

@@ -93,16 +93,16 @@ describe('item testing', () => {
 
     it('update item', async () => {
         expect(itemId).is.not.null
-        expect(publicKey).not.null
+        expect(itemKey).not.null
         expect(privateKey).not.null
         expect(testPack).not.null
-        if(itemId && testPack && publicKey && privateKey) {
+        if(itemId && testPack && itemKey && privateKey) {
             const newTitle = 'new_test_title'
             const newMeta: ZHTTestingMeta = {
                 ...testPack.data.meta,
                 title: newTitle
             }
-            await client.updateItemMeta<ZHTTestingMeta>(itemId, newMeta, publicKey)
+            await client.updateItemMeta<ZHTTestingMeta>(itemId, newMeta, itemKey)
             const newItem = await client.getItem<ZHTTestingMeta>(itemId, privateKey, p => p as ZHTTestingMeta)
             expect(newItem.meta.title).eq(newTitle)
         }
@@ -152,12 +152,12 @@ describe('item testing', () => {
     })
 
     it('test tag', async () => {
-        expect(publicKey).not.null
+        expect(itemKey).not.null
         expect(privateKey).not.null
         expect(itemId).not.null
         const testTag = 'test_tag'
-        if(publicKey && itemId && privateKey) {
-            const res = await client.addTag(itemId, testTag, publicKey)
+        if(itemKey && itemId && privateKey) {
+            const res = await client.addTag(itemId, testTag, itemKey)
             expect(res.itemId).eq(itemId)
             const item = await client.getItem(itemId, privateKey, data => data as ZHTTestingMeta)
             expect(item.tags.some(t => t.id == res.id && t.tag == testTag)).true

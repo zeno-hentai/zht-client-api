@@ -31,9 +31,6 @@ describe('worker tests', async () => {
     
     after(async () => {
         await client.deleteUser()
-        if(listener){
-            listener.close()
-        }
     })
 
     it('register worker client', async () => {
@@ -124,6 +121,20 @@ describe('worker tests', async () => {
         }
     })
 
+    it('check notifier counter', async () => {
+        expect(triggeredCounter).eq(4)
+    })
+
+    it('close worker', async () => {
+        expect(!!(listener && userPrivateKey)).true
+        if(listener && userPrivateKey){
+            listener.close()
+            await new Promise((r, j) => setTimeout(r, 500))
+            const workers = await client.queryWorkers(userPrivateKey)
+            expect(workers[0].online).false
+        }
+    })
+
     it('delete worker', async () => {
         expect(workerInfo && userPrivateKey).not.null
         if(workerInfo && userPrivateKey) {
@@ -131,9 +142,5 @@ describe('worker tests', async () => {
             const workers = await client.queryWorkers(userPrivateKey)
             expect(workers.length).eq(0)
         }
-    })
-
-    it('check notifier counter', async () => {
-        expect(triggeredCounter).eq(2)
     })
 })

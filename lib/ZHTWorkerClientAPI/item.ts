@@ -16,8 +16,8 @@ export type OnUploadFileProcess = (p: any) => void
 ZHTWorkerClientAPI.prototype.createItem = async function<Meta> (request: CreateItemRequest<Meta>, publicKey: string): Promise<CreateItemResult> {
     const key = await aesGenKey()
     const encryptedKey = await rsaEncrypt(key, publicKey)
-    const encryptedMeta = await rsaEncrypt(JSON.stringify(request.meta), publicKey)
-    const encryptedTags = await Promise.all(request.tags.map(t => rsaEncrypt(t, publicKey)))
+    const encryptedMeta = await aesEncrypt(JSON.stringify(request.meta), key)
+    const encryptedTags = await Promise.all(request.tags.map(t => aesEncrypt(t, key)))
     const {id} = await this.http.post<CreateItemResponse, EncryptedCreateItemRequest>("/api/api/item/add", {
         encryptedKey, encryptedMeta, encryptedTags
     })

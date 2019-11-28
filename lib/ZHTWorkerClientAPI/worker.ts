@@ -22,13 +22,18 @@ async function getNotificationListener(url: string, apiToken: string, workerPubl
     const ws = createWebSocketClient(url)
     return new Promise((resolve, reject) => {
         ws.onConnection(() => {
-            ws.send(JSON.stringify(request))
             ws.onMessage(() => {
-                ws.onMessage(onNotification)
+                ws.onMessage(() => {
+                    onNotification()
+                })
                 resolve({
-                    close: () => { ws.close() }
+                    close: () => {
+                        ws.send("CLOSE")
+                        ws.close()
+                    }
                 })
             })
+            ws.send(JSON.stringify(request))
         })
     })
 }
