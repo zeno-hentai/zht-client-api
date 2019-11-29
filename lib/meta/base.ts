@@ -1,4 +1,4 @@
-export type ZHTLanguage = "unknown" | "zh-CN" | "en-US" | "jp"
+export type ZHTLanguage = "unknown" | "zh" | "zh-Hans" | "zh-Hant" | "en-US" | "jp"
 
 export type ZHTItemSource = {
     type: "local"
