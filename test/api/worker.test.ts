@@ -3,6 +3,7 @@ import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
 import { expect } from 'chai';
 import { WorkerInfo, ZHTWorkerNotificationListener } from '../../lib/data/worker';
 import { rsaGenKey } from '../../lib';
+import { randomBinary } from './utils/file';
 describe('worker tests', async () => {
     const client = getClient()
     let workerClient: ZHTWorkerClientAPI | null
@@ -15,6 +16,7 @@ describe('worker tests', async () => {
     const TEST_TASK_URL = "test url"
     let triggeredCounter = 0
     let listener: ZHTWorkerNotificationListener | null
+    const TEST_CONTENT = randomBinary(1000)
 
     before(async () => {
         await client.register({username: `test_${new Date().getTime()}`, password: 'test', masterKey: 'admin-secret'})

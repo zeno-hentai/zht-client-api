@@ -27,7 +27,7 @@ ZHTWorkerClientAPI.prototype.createItem = async function<Meta> (request: CreateI
 }
 
 ZHTWorkerClientAPI.prototype.uploadItemFile = async function (itemId: number, fileName: string, key: string, data: ArrayBuffer, onUpload?: OnUploadFileProcess): Promise<void> {
-    const encryptedData = new TextEncoder().encode(await aesEncrypt(await b64encode(data), key))
+    const encryptedData = new TextEncoder().encode(await aesEncrypt(b64encode(data), key))
     const encryptedFileName = await aesEncrypt(fileName, key)
     await this.http.putBinaryData(`/api/api/file/upload/${itemId}/${encryptedFileName}`, encryptedData, onUpload)
 }

@@ -33,3 +33,11 @@ export function generateTestingPackage(title: string): ZHTTestingPackage {
     }
     return {data, files}
 }
+
+export function randomBinary(length: number): ArrayBuffer {
+    const buf = new Uint8Array(length)
+    for(let i=0; i<length; i++){
+        buf.set([Math.floor(Math.random() * 10000009) % 256], i)
+    }
+    return buf.buffer
+}

@@ -1,7 +1,7 @@
 import {expect} from 'chai'
 import { getClient, getWorkerClient } from './utils/client';
 import ZHTWorkerClientAPI from '../../lib/ZHTWorkerClientAPI';
-import { generateTestingPackage, ZHTTestingPackage, ZHTTestingMeta } from './utils/file';
+import { generateTestingPackage, ZHTTestingPackage, ZHTTestingMeta, randomBinary } from './utils/file';
 import { b64encode } from '../../lib/utils/crypto/base64';
 import { decryptItemData } from '../../lib';
 import moment from 'moment'
@@ -54,7 +54,7 @@ describe('item testing', () => {
             itemKey = uploadedItem.key
             for(let [name, data] of Object.entries(testPack.files)){
                 console.log(`      upload: ${name}`)
-                await workerClient.uploadItemFile(itemId, name, itemKey, data)
+                await workerClient.uploadItemFile(itemId, name, itemKey, TEST_FILE_CONTENT)
             }
         }
     })
@@ -62,11 +62,16 @@ describe('item testing', () => {
     it('check updated', async () => {
         expect(itemId).is.not.null
         expect(testPack).not.null
+        expect(itemKey).not.null
         expect(privateKey).not.null
-        if(itemId && testPack && privateKey) {
+        if(itemId && testPack && privateKey && itemKey) {
             for await(let item of client.updatedItemsAfter<ZHTTestingMeta>(afterMoment, privateKey, s => s as ZHTTestingMeta)) {
                 expect(item.id).eq(itemId)
             }
+            const files = await client.getFileMap(itemId, itemKey)
+            const data = await client.getFileData(itemId, Object.values(files)[0], itemKey)
+            expect(data.byteLength).eq(TEST_FILE_CONTENT.byteLength)
+            expect(b64encode(data)).eq(b64encode(TEST_FILE_CONTENT))
         }
     })
 
@@ -110,7 +115,7 @@ describe('item testing', () => {
 
     let testMappedName: string | null
     const TEST_FILE_NAME = 'test_file_name.txt'
-    const TEST_FILE_CONTENT = new TextEncoder().encode('test_content_'.repeat(1000))
+    const TEST_FILE_CONTENT = randomBinary(1000)
 
     it('upload file', async () => {
         expect(itemId).is.not.null
@@ -147,7 +152,7 @@ describe('item testing', () => {
             const [name, mappedName] = Object.entries(fileMap)[0]
             const data = await client.getFileData(itemId, mappedName, item.key)
             console.log(`      downloading ${name} => ${mappedName}`)
-            expect(b64encode(data)).eq(b64encode(testPack.files[name]))
+            expect(b64encode(data)).eq(b64encode(TEST_FILE_CONTENT))
         }
     })
 
