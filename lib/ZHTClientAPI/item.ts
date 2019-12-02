@@ -1,9 +1,9 @@
 import {ZHTClientAPI} from './base';
 import { EncryptedItemIndexData, ItemIndexData, ZHTItemQueryPaging, UpdateMetaRequest } from '../data/item';
-import { rsaDecrypt, rsaEncrypt } from '../utils/crypto/rsa';
+import { rsaDecrypt, rsaEncrypt, rsaDecryptWrapped, rsaEncryptWrapped } from '../utils/crypto/rsa';
 import { ItemTagData, AddItemTagResponse, AddItemTagRequest } from '../data/tag';
 import { CreateItemResult, CreateItemRequest, EncryptedCreateItemRequest, CreateItemResponse } from '../../lib/data/item';
-import { aesGenKey, aesDecrypt, aesEncrypt } from '../utils/crypto/aes';
+import { aesGenKey, aesDecrypt, aesEncrypt, aesDecryptWrapped, aesEncryptWrapped } from '../utils/crypto/aes';
 import { Moment } from 'moment';
 
 declare module './base' {
@@ -38,12 +38,12 @@ export async function decryptItemData<Meta extends {}>(
     encryptedItem: EncryptedItemIndexData, 
     privateKey: string, 
     metaParser: MetaParser<Meta>): Promise<ItemIndexData<Meta>> {
-        const key = await rsaDecrypt(encryptedItem.encryptedKey, privateKey)
-        const metaText = await aesDecrypt(encryptedItem.encryptedMeta, key)
+        const key = await rsaDecryptWrapped(encryptedItem.encryptedKey, privateKey)
+        const metaText = await aesDecryptWrapped(encryptedItem.encryptedMeta, key)
         const meta = await Promise.resolve(metaParser(JSON.parse(metaText)))
         const tags: ItemTagData[] = await Promise.all(encryptedItem.encryptedTags.map(async t => ({
             id: t.id,
-            tag: await aesDecrypt(t.encryptedTag, key)
+            tag: await aesDecryptWrapped(t.encryptedTag, key)
         })))
         return {key, meta, tags, id: encryptedItem.id}
 }
@@ -60,9 +60,9 @@ ZHTClientAPI.prototype.queryItemList = async function <Meta extends {}>(offset: 
 
 ZHTClientAPI.prototype.createItem = async function <Meta extends {}>(request: CreateItemRequest<Meta>, publicKey: string): Promise<CreateItemResult> {
     const key = await aesGenKey()
-    const encryptedKey = await rsaEncrypt(key, publicKey)
-    const encryptedMeta = await rsaEncrypt(JSON.stringify(request.meta), publicKey)
-    const encryptedTags = await Promise.all(request.tags.map(t => rsaEncrypt(t, publicKey)))
+    const encryptedKey = await rsaEncryptWrapped(key, publicKey)
+    const encryptedMeta = await rsaEncryptWrapped(JSON.stringify(request.meta), publicKey)
+    const encryptedTags = await Promise.all(request.tags.map(t => rsaEncryptWrapped(t, publicKey)))
     const {id} = await this.http.post<CreateItemResponse, EncryptedCreateItemRequest>("/api/item/create", {
         encryptedKey, encryptedMeta, encryptedTags
     })
@@ -70,7 +70,7 @@ ZHTClientAPI.prototype.createItem = async function <Meta extends {}>(request: Cr
 }
 
 ZHTClientAPI.prototype.updateItemMeta = async function <Meta extends {}>(itemId: number, meta: Meta, itemKey: string): Promise<void>{
-    const encryptedMeta = await aesEncrypt(JSON.stringify(meta), itemKey)
+    const encryptedMeta = await aesEncryptWrapped(JSON.stringify(meta), itemKey)
     await this.http.put<void, UpdateMetaRequest>("/api/item/update/meta", {encryptedMeta, itemId})
 }
 
@@ -94,7 +94,7 @@ ZHTClientAPI.prototype.updatedItemsAfter = async function* <Meta extends {}>(aft
 }
 
 ZHTClientAPI.prototype.addTag = async function (itemId: number, tag: string, itemKey: string): Promise<AddItemTagResponse> {
-    const encryptedTag = await aesEncrypt(tag, itemKey)
+    const encryptedTag = await aesEncryptWrapped(tag, itemKey)
     return await this.http.post<AddItemTagResponse, AddItemTagRequest>("/api/item/tag/add", {itemId, encryptedTag})
 }
 

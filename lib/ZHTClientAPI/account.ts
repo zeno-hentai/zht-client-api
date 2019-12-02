@@ -2,9 +2,10 @@ import {ZHTClientAPI} from './base';
 import { ZHTUserInfo, ZHTUserUnauthorized } from '../data';
 import { sha256Hash } from '../utils/crypto/sha256';
 import { rsaGenKey } from '../utils/crypto/rsa';
-import { aesEncrypt, aesDecrypt } from '../utils/crypto/aes';
+import { aesEncrypt, aesDecrypt, aesEncryptWrapped, aesDecryptWrapped } from '../utils/crypto/aes';
 import { ZHTDecryptedUserInfo } from '../data/user';
 import uuid from 'uuid';
+import { b64encode } from '../utils/crypto';
 
 declare module './base' {
     interface ZHTClientAPI {
@@ -50,7 +51,7 @@ ZHTClientAPI.prototype.register = async function(request: ZHTRegisterRequest): P
     const encryptedPassword = await sha256Hash(password + salt)
     const authorizePassword = await sha256Hash(encryptedPassword + salt)
     const {publicKey, privateKey} = await rsaGenKey()
-    const encryptedPrivateKey = await aesEncrypt(privateKey, encryptedPassword)
+    const encryptedPrivateKey = await aesEncryptWrapped(privateKey, encryptedPassword)
     const result = await this.http.post<ZHTUserInfo, EncryptedZHTRegisterRequest>("/api/auth/register", {
         username,
         password: authorizePassword,
@@ -59,7 +60,7 @@ ZHTClientAPI.prototype.register = async function(request: ZHTRegisterRequest): P
         encryptedPrivateKey,
         masterKey
     })
-    if(result.encryptedPrivateKey != encryptedPrivateKey){
+    if(result.encryptedPrivateKey !== encryptedPrivateKey){
         throw new Error("Invalid privateKey")
     }
     return {
@@ -76,8 +77,9 @@ ZHTClientAPI.prototype.login = async function({username, password}: ZHTLoginRequ
         username,
         password: authorizePassword
     })
+    const privateKey = await aesEncryptWrapped(encryptedPrivateKey, encryptedPassword)
     return {
-        privateKey: await aesDecrypt(encryptedPrivateKey, encryptedPassword),
+        privateKey,
         ...rest
     }
 }
@@ -92,7 +94,7 @@ ZHTClientAPI.prototype.infoDecrypted = async function (password: string): Promis
         const salt = await this.http.get<string>(`/api/auth/salt/${info.username}`)
         const {encryptedPrivateKey, ...rest} = info
         const encryptedPassword = await sha256Hash(password + salt)
-        const privateKey = await aesDecrypt(encryptedPrivateKey, encryptedPassword)
+        const privateKey = await aesDecryptWrapped(encryptedPrivateKey, encryptedPassword)
         return {privateKey, ...rest}
     }else{
         return info

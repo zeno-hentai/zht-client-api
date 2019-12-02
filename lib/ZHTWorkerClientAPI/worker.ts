@@ -1,6 +1,6 @@
 import {ZHTWorkerClientAPI} from './base';
 import { PolledWorkerTask, EncryptedWorkerTaskInfo, WorkerTaskInfo, WorkerRegisterRequest, WorkerTaskStatusUpdateRequest, ZHTWorkerNotificationListener, ZHTWorkerNotificationListenerConnectionRequest, ConnectWorkerOptions } from '../data/worker';
-import { rsaDecrypt, rsaEncrypt } from '../utils/crypto/rsa';
+import { rsaDecryptWrapped, rsaEncryptWrapped } from '../utils/crypto/rsa';
 import { createWebSocketClient } from '../utils/net/ws';
 
 declare module './base' {
@@ -14,7 +14,7 @@ declare module './base' {
 }
 
 async function getNotificationListener(url: string, apiToken: string, workerPublicKey: string, userPublicKey: string, onNotification: () => void): Promise<ZHTWorkerNotificationListener> {
-    const encryptedPublicKey = await rsaEncrypt(workerPublicKey, userPublicKey)
+    const encryptedPublicKey = await rsaEncryptWrapped(workerPublicKey, userPublicKey)
     const request: ZHTWorkerNotificationListenerConnectionRequest = {
         token: apiToken,
         encryptedPublicKey
@@ -52,7 +52,7 @@ ZHTWorkerClientAPI.prototype.pollTask = async function(workerPrivateKey: string)
     const res = await this.http.delete<PolledWorkerTask<EncryptedWorkerTaskInfo>>("/api/api/worker/task/poll")
     if(res.hasTask){
         const {encryptedURL, ...rest} = res.data
-        const url = await rsaDecrypt(encryptedURL, workerPrivateKey)
+        const url = await rsaDecryptWrapped(encryptedURL, workerPrivateKey)
         return {
             hasTask: true,
             data: {

@@ -8,8 +8,8 @@ export interface ZHTKeyPair {
 
 interface ZHTRsaUtil {
     generateKeyPair(): Promise<ZHTKeyPair>
-    encrypt(plain: string, publicKey: string): Promise<string>
-    decrypt(encrypted: string, privateKey: string): Promise<string>
+    encrypt(data: ArrayBuffer, publicKey: string): Promise<ArrayBuffer>
+    decrypt(encrypted: ArrayBuffer, privateKey: string): Promise<ArrayBuffer>
 }
 
 class BrowserRsaUtil implements ZHTRsaUtil {
@@ -25,6 +25,26 @@ class BrowserRsaUtil implements ZHTRsaUtil {
     }
 
     private chunkSize = 256
+
+    private *splitIntoChunks(buffer: ArrayBuffer, chunkSize: number){
+        for(let i=0; i<buffer.byteLength; i+=chunkSize){
+            yield buffer.slice(i, i+chunkSize)
+        }
+    }
+
+    private mergeChunks(chunks: ArrayBuffer[]): ArrayBuffer{
+        let len = 0
+        for(let c of chunks){
+            len += c.byteLength
+        }
+        const buf = new Uint8Array(len)
+        let offset = 0
+        for(let c of chunks){
+            buf.set(new Uint8Array(c), offset)
+            offset += c.byteLength
+        }
+        return buf.buffer
+    }
 
     constructor(subtle: SubtleCrypto) {
         this.subtle = subtle
@@ -43,35 +63,23 @@ class BrowserRsaUtil implements ZHTRsaUtil {
         }
     }
 
-    async encrypt(plainText: string, publicKey: string): Promise<string> {
-        const enc = new TextEncoder()
+    async encrypt(data: ArrayBuffer, publicKey: string): Promise<ArrayBuffer> {
         const key = await this.subtle.importKey(this.KEY_FORMAT, JSON.parse(publicKey), this.ENCRYPTION_ALGORITHM, true, ['encrypt'])
-        const chunks: string[] = []
-        const originalBinary = enc.encode(plainText)
-        for(let begin = 0; begin < originalBinary.byteLength; begin += this.chunkSize){
-            const chunk = originalBinary.slice(begin, begin + this.chunkSize)
+        const chunks: ArrayBuffer[] = []
+        for(let chunk of this.splitIntoChunks(data, this.chunkSize)){
             const binData = await this.subtle.encrypt(this.ENCRYPTION_ALGORITHM, key, chunk)
-            chunks.push(b64encode(binData))
+            chunks.push(binData)
         }
-        return chunks.join("|")
+        return this.mergeChunks(chunks)
     }
-    async decrypt(plainText: string, privateKey: string): Promise<string> {
-        const dec = new TextDecoder()
+    async decrypt(encrypted: ArrayBuffer, privateKey: string): Promise<ArrayBuffer> {
         const key = await this.subtle.importKey(this.KEY_FORMAT, JSON.parse(privateKey), this.ENCRYPTION_ALGORITHM, true, ['decrypt'])
         const targets: ArrayBuffer[] = []
-        let len = 0
-        for(let chunk of plainText.split("|")) {
-            const binData = await this.subtle.decrypt(this.ENCRYPTION_ALGORITHM, key, b64decode(chunk))
-            len += binData.byteLength
+        for(let chunk of this.splitIntoChunks(encrypted, this.chunkSize*2)) {
+            const binData = await this.subtle.decrypt(this.ENCRYPTION_ALGORITHM, key, chunk)
             targets.push(binData)
         }
-        const result = new Uint8Array(len)
-        let offset = 0
-        for(let c of targets){
-            result.set(new Uint8Array(c), offset)
-            offset += c.byteLength
-        }
-        return dec.decode(result)
+        return this.mergeChunks(targets)
     }
 }
 
@@ -83,10 +91,21 @@ export async function rsaGenKey(): Promise<ZHTKeyPair>{
     return await rsaUtil.generateKeyPair()
 }
 
-export async function rsaEncrypt(plainText: string, publicKey: string): Promise<string> {
-    return await rsaUtil.encrypt(plainText, publicKey)
+export async function rsaEncrypt(data: ArrayBuffer, publicKey: string): Promise<ArrayBuffer> {
+    return await rsaUtil.encrypt(data, publicKey)
 }
 
-export async function rsaDecrypt(plainText: string, privateKey: string) {
-    return await rsaUtil.decrypt(plainText, privateKey)
+export async function rsaDecrypt(encrypted: ArrayBuffer, privateKey: string): Promise<ArrayBuffer> {
+    return await rsaUtil.decrypt(encrypted, privateKey)
+}
+
+const textEncoder = new TextEncoder()
+const textDecoder = new TextDecoder()
+
+export async function rsaEncryptWrapped(data: string, publicKey: string): Promise<string> {
+    return b64encode(await rsaUtil.encrypt(textEncoder.encode(data), publicKey))
+}
+
+export async function rsaDecryptWrapped(encrypted: string, privateKey: string): Promise<string> {
+    return textDecoder.decode(await rsaUtil.decrypt(b64decode(encrypted), privateKey))
 }

@@ -1,6 +1,6 @@
 import {ZHTClientAPI} from './base';
 import { WorkerInfo, WorkerAddTaskRequest, EncryptedWorkerTaskInfo, WorkerTaskInfo, EncryptedWorkerInfo, WorkerTaskStatusUpdateRequest } from '../data/worker';
-import { rsaEncrypt, rsaDecrypt } from '../utils/crypto/rsa';
+import { rsaEncrypt, rsaDecrypt, rsaEncryptWrapped, rsaDecryptWrapped } from '../utils/crypto/rsa';
 
 declare module './base' {
     interface ZHTClientAPI {
@@ -16,8 +16,8 @@ declare module './base' {
 }
 
 ZHTClientAPI.prototype.addWorkerTask = async function (url: string, userPublicKey: string, workerId: number, workerPublicKey: string): Promise<number> {
-    const encryptedURLToWorker = await rsaEncrypt(url, workerPublicKey)
-    const encryptedURLToUser = await rsaEncrypt(url, userPublicKey)
+    const encryptedURLToWorker = await rsaEncryptWrapped(url, workerPublicKey)
+    const encryptedURLToUser = await rsaEncryptWrapped(url, userPublicKey)
     return await this.http.post<number, WorkerAddTaskRequest>("/api/api/worker/task/add", {
         workerId,
         encryptedURLToWorker,
@@ -30,7 +30,7 @@ ZHTClientAPI.prototype.queryWorkers = async function (userPrivateKey: string): P
     return await Promise.all(list.map(async (res) => (res.online ? 
         {
         ...res,
-        publicKey: await rsaDecrypt(res.encryptedPublicKey, userPrivateKey)
+        publicKey: await rsaDecryptWrapped(res.encryptedPublicKey, userPrivateKey)
     } : res )))
 }
 
@@ -39,14 +39,14 @@ ZHTClientAPI.prototype.getWorker = async function (workerId: number, userPrivate
     return res.online ? {
         ...res,
         online: true,
-        publicKey: await rsaDecrypt(res.encryptedPublicKey, userPrivateKey),
+        publicKey: await rsaDecryptWrapped(res.encryptedPublicKey, userPrivateKey),
     } : res
 }
 
 ZHTClientAPI.prototype.queryWorkerTasks = async function (userPrivateKey: string): Promise<WorkerTaskInfo[]> {
     const list = await this.http.get<EncryptedWorkerTaskInfo[]>("/api/api/worker/task/query")
     return await Promise.all(list.map(async ({encryptedURL, ...rest}) => ({
-        url: await rsaDecrypt(encryptedURL, userPrivateKey),
+        url: await rsaDecryptWrapped(encryptedURL, userPrivateKey),
         ...rest
     })))
 }
@@ -54,7 +54,7 @@ ZHTClientAPI.prototype.queryWorkerTasks = async function (userPrivateKey: string
 ZHTClientAPI.prototype.getTask = async function (taskId: number, userPrivateKey: string): Promise<WorkerTaskInfo> {
     const {encryptedURL, ...rest} = await this.http.get<EncryptedWorkerTaskInfo>(`/api/api/worker/task/get/${taskId}`)
     return {
-        url: await rsaDecrypt(encryptedURL, userPrivateKey),
+        url: await rsaDecryptWrapped(encryptedURL, userPrivateKey),
         ...rest
     }
 }
