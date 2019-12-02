@@ -77,7 +77,7 @@ ZHTClientAPI.prototype.login = async function({username, password}: ZHTLoginRequ
         username,
         password: authorizePassword
     })
-    const privateKey = await aesEncryptWrapped(encryptedPrivateKey, encryptedPassword)
+    const privateKey = await aesDecryptWrapped(encryptedPrivateKey, encryptedPassword)
     return {
         privateKey,
         ...rest
