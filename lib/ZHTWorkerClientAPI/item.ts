@@ -1,8 +1,8 @@
 import {ZHTWorkerClientAPI} from './base';
 import { CreateItemRequest, CreateItemResponse, EncryptedCreateItemRequest, CreateItemResult } from '../data/item';
-import { rsaEncrypt, rsaEncryptWrapped } from '../utils/crypto/rsa';
-import { b64encode } from '../utils/crypto/base64';
+import { rsaEncryptWrapped } from '../utils/crypto/rsa';
 import { aesGenKey, aesEncrypt, aesEncryptWrapped, aesEncryptWrappedUrlSafe } from '../utils/crypto/aes';
+import { compress } from '../utils/compress';
 
 declare module './base' {
     interface ZHTWorkerClientAPI {
@@ -27,7 +27,8 @@ ZHTWorkerClientAPI.prototype.createItem = async function<Meta> (request: CreateI
 }
 
 ZHTWorkerClientAPI.prototype.uploadItemFile = async function (itemId: number, fileName: string, key: string, data: ArrayBuffer, onUpload?: OnUploadFileProcess): Promise<void> {
-    const encryptedData = await aesEncrypt(data, key)
+    const compressedData = await compress(data)
+    const encryptedData = await aesEncrypt(compressedData, key)
     const encryptedFileName = await aesEncryptWrappedUrlSafe(fileName, key)
     await this.http.putBinaryData(`/api/api/file/upload/${itemId}/${encryptedFileName}`, encryptedData, onUpload)
 }

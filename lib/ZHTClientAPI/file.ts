@@ -1,6 +1,6 @@
 import {ZHTClientAPI} from './base';
 import { aesDecrypt, aesEncrypt, aesDecryptWrappedUrlSafe, aesEncryptWrappedUrlSafe } from '../utils/crypto/aes';
-import { b64decode, b64encode } from '../utils/crypto/base64';
+import { decompress, compress } from '../utils/compress';
 
 declare module './base' {
     interface ZHTClientAPI {
@@ -22,11 +22,13 @@ ZHTClientAPI.prototype.getFileMap = async function (itemId: number, key: string)
 
 ZHTClientAPI.prototype.getFileData = async function (itemId: number, mappedFileName: string, key: string, onDownloadProgress?: (progressEvent: any) => void): Promise<ArrayBuffer> {
     const data = await this.http.getBinaryData(`/api/file/data/${itemId}/${mappedFileName}`, onDownloadProgress)
-    return await aesDecrypt(data, key)
+    const compressedData = await aesDecrypt(data, key)
+    return await decompress(compressedData)
 }
 
 ZHTClientAPI.prototype.uploadFile = async function (itemId: number, name: string, key: string, data: ArrayBuffer, onUpload?: (p: any) => void): Promise<void> {
-    const encryptedData = await aesEncrypt(data, key)
+    const compressedData = await compress(data)
+    const encryptedData = await aesEncrypt(compressedData, key)
     const encryptedFileName = await aesEncryptWrappedUrlSafe(name, key)
     await this.http.putBinaryData(`/api/item/file/upload/${itemId}/${encryptedFileName}`, encryptedData, onUpload)
 }
