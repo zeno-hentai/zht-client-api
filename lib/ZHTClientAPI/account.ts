@@ -43,8 +43,6 @@ interface EncryptedZHTLoginRequest {
     password: string
 }
 
-const PASSWORD_SALT = "SHItiahodfioaodifnao"
-
 ZHTClientAPI.prototype.register = async function(request: ZHTRegisterRequest): Promise<ZHTDecryptedUserInfo>{
     const {username, password, masterKey} = request
     const salt = uuid.v4()

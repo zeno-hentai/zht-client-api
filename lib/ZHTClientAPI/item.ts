@@ -61,8 +61,8 @@ ZHTClientAPI.prototype.queryItemList = async function <Meta extends {}>(offset: 
 ZHTClientAPI.prototype.createItem = async function <Meta extends {}>(request: CreateItemRequest<Meta>, publicKey: string): Promise<CreateItemResult> {
     const key = await aesGenKey()
     const encryptedKey = await rsaEncryptWrapped(key, publicKey)
-    const encryptedMeta = await rsaEncryptWrapped(JSON.stringify(request.meta), publicKey)
-    const encryptedTags = await Promise.all(request.tags.map(t => rsaEncryptWrapped(t, publicKey)))
+    const encryptedMeta = await aesEncryptWrapped(JSON.stringify(request.meta), key)
+    const encryptedTags = await Promise.all(request.tags.map(t => aesEncryptWrapped(t, key)))
     const {id} = await this.http.post<CreateItemResponse, EncryptedCreateItemRequest>("/api/item/create", {
         encryptedKey, encryptedMeta, encryptedTags
     })

@@ -12,15 +12,17 @@ describe('account life cycle', () => {
         expect((await client.info()).authorized).to.be.false
     })
     it('register', async() => {
-        await client.register({
+        const res = await client.register({
             username, password, masterKey
         })
+        JSON.parse(res.privateKey)
     })
     it('check uesr info', async () => {
-        let userInfo = await client.info()
+        let userInfo = await client.infoDecrypted(password)
         expect(userInfo.authorized).to.be.true
         if(userInfo.authorized){
             expect(userInfo.username).eq(username)
+            JSON.parse(userInfo.privateKey)
         }
     })
     it('logout', async () => {
@@ -28,8 +30,9 @@ describe('account life cycle', () => {
         expect((await client.info()).authorized).to.be.false
     })
     it('login  again', async () => {
-        await client.login({username, password})
+        const res = await client.login({username, password})
         expect((await client.info()).authorized).to.be.true
+        JSON.parse(res.privateKey)
     })
     it('delete account', async () => {
         await client.deleteUser()
